@@ -27,3 +27,5 @@ use Mix.Config
 # Configure your database
 config :ecto_mnesia,
   ecto_repos: []
+
+config :ecto_mnesia, :stacktrace_depth, 20

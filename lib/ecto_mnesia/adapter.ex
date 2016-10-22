@@ -1,11 +1,11 @@
 defmodule Ecto.Mnesia.Adapter do
     @moduledoc """
-    Ecto adapter for `mnesia` Erlang term database.
+    Ecto.Adapter for `mnesia` Erlang term database.
 
     It supports compound `mnesia` indexes (aka secondary indexes) in database setup.
     The implementation relies directly on `mnesia` application.
     Supports partial Ecto.Query to MatchSpec conversion for `mnesia:select` (and, join).
-    MatchSpec converion utilities could be found in `Ecto.Query.Mnesia`.
+    MatchSpec converion utilities could be found in `Ecto.Mnesia.Query`.
 
     ## Configuration Sample
 
@@ -22,7 +22,7 @@ defmodule Ecto.Mnesia.Adapter do
 
     where `Model.Topics` is `Ecto.Schema` object.
 
-    ## Usage in `config.exs`
+    ## usage in `config.exs`
 
         config :ecto, :mnesia_metainfo, Sample.Model
         config :ecto, :mnesia_backend,  :ram_copies
@@ -53,26 +53,43 @@ defmodule Ecto.Mnesia.Adapter do
                          wheres: wheres,
                          order_bys: ordering} = arg) do
 
-         fields    = pre_fields(fields, model)
-         condition = Ecto.Query.Mnesia.match_spec(model, table, fields: fields, wheres: wheres)
-         ordering  = Ecto.Query.Mnesia.ordering(ordering, table)
+         :io.format("Args: ~p~n",[arg])
+         :io.format("Take: ~p~n",[take])
 
-         {:cache, {:all, condition, ordering}}
+         fields    = pre_fields(fields, model)
+         #spec     = Ecto.Mnesia.Query.match_spec(model, table, fields: fields, wheres: wheres)
+         spec      = wheres
+         ordering  = Ecto.Mnesia.Query.ordering(ordering, table)
+
+         {:cache, {:all, spec, ordering}}
     end
 
     def  prepare(:delete_all, %{from: {table, _},
                                 select: nil,
                                 wheres: wheres} = arg) do
 
-         {:cache, {:delete_all, Ecto.Query.Mnesia.match_spec(table, wheres: wheres)}}
+         {:cache, {:delete_all, Ecto.Mnesia.Query.match_spec(table, nil, wheres, nil)}}
     end
 
     @doc """
     Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
     """
     def  execute(repo, %{sources: {{table, model}}, fields: fields, take: take},
-                        {:cache, fun, {:all, spec, ordering}} = query,
+                        {:cache, fun, {:all, wheres, ordering}} = query,
                         params, preprocess, options) do
+
+
+         :io.format("Params: ~p~n",[params])
+         :io.format("Take: ~p~n",[take])
+         :io.format("Query: ~p~n",[query])
+         :io.format("Preprocess: ~p~n",[preprocess])
+         :io.format("Options: ~p~n",[options])
+
+         spec = Ecto.Mnesia.Query.match_spec(model, table, fields, wheres, params)
+
+         :io.format("Spec: ~p~n",[spec])
+
+         Logger.info("Prepare Query Params: #{inspect preprocess}")
 
          fields = pre_fields(fields, model)
          take   = pre_take(take, fields)
@@ -89,7 +106,7 @@ defmodule Ecto.Mnesia.Adapter do
     """
     def  insert(_repo, %{schema: schema, source: {_, table}}, params, autogen, opts) do
 
-         rec = Ecto.Query.Mnesia.make_tuple(schema, params, String.to_atom table)
+         rec = Ecto.Mnesia.Query.make_tuple(schema, params, String.to_atom table)
          res = :mnesia.dirty_write(rec)
 
          {:ok, []}
@@ -107,7 +124,7 @@ defmodule Ecto.Mnesia.Adapter do
     """
     def  update(_repo, %{schema: schema, source: {_, table}} = _meta, params, filter, _autogen, _opts) do
 
-         rec = Ecto.Query.Mnesia.make_tuple(schema, params, String.to_atom table)
+         rec = Ecto.Mnesia.Query.make_tuple(schema, params, String.to_atom table)
          res = :mnesia.dirty_write(rec)
 
          {:ok, []}
@@ -126,9 +143,32 @@ defmodule Ecto.Mnesia.Adapter do
     def  keys, do: []
 
     @doc """
+    Retrieve all records from the given table using `mnesia:all_keys`.
+    """
+    def  all(table) do
+         many(fn -> :mnesia.all_keys(table)
+                 |> Enum.map(fn key
+                 -> :mnesia.read(table, key) end) end)
+    end
+
+    def  count(table), do: :mnesia.table_info(table, :size)
+
+    def  many(fun) do
+         case :mnesia.activity(:async_dirty,fun) do
+              {:aborted, error} -> {:error, error}
+              {:atomic, r} -> r
+              x -> x end end
+
+    def  storage_down(x) do
+         :mnesia.stop
+         :mnesia.delete_schema([Kernel.node])
+         Logger.info("Storage up: #{inspect x}")
+    end
+
+    @doc """
     Mnesia starting during Adapter boot.
     """
-    def  start_link(_, _),             do: Application.start(:mnesia)
+    def start_link(_, _, _, _, _),     do: Application.start(:mnesia)
 
     @doc """
     Stopping Mnesia Adapter.
@@ -139,9 +179,9 @@ defmodule Ecto.Mnesia.Adapter do
     def  load(_, value),               do: {:ok, value}
 
     @doc """
-    The name of application is `:ecto_mnesia`.
+    The name of the application is `:ecto`.
     """
-    def  application,                  do: :ecto
+    def  application,                  do: :ecto_mnesia
 
     def  dumpers(primitive, _type),    do: [primitive]
 
@@ -149,13 +189,15 @@ defmodule Ecto.Mnesia.Adapter do
 
     def  autogenerate(x),              do: next_id(x,1)
 
-    def  child_spec(repo, opts),       do: Supervisor.Spec.worker(repo, opts)
+    def  child_spec(_repo, opts) do
+      Supervisor.Spec.worker(Ecto.Mnesia.Storage, opts)
+    end
 
     defp process_row(row, zip),        do: [List.foldr(zip, row, fn ({k, v},acc) ->
                                              Map.update!(acc, k, fn _ -> v end) end)]
 
     defp pre_fields([{:&, [], [_, f, _]}], _), do: f
-    defp pre_fields(fields, model),            do: Ecto.Query.Mnesia.result(fields, model, [])
+    defp pre_fields(fields, model),            do: Ecto.Mnesia.Query.result(fields, model, [])
 
     defp pre_take(%{0 => {:any, t}}, _),       do: t
     defp pre_take(_, fields),                  do: fields

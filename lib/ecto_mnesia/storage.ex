@@ -1,11 +1,12 @@
 defmodule Ecto.Mnesia.Storage do
-  @behaviour Ecto.Adapter.Storage
   require Logger
+  @behaviour Ecto.Adapter.Storage
 
-  def storage_up(x) do
+  def  storage_up(x) do
        host      = Kernel.node
-       copy_type = :application.get_env(:ecto, :mnesia_backend, :ram_copies)
-       model     = :application.get_env(:ecto, :mnesia_metainfo, Ecto.Mnesia.Adapter)
+       conf      = Confex.get(:ecto_mnesia, TestRepo)
+       copy_type = conf[:mnesia_backend]
+       model     = conf[:mnesia_metainfo]
        :mnesia.start
        :mnesia.change_table_copy_type(:schema, host, copy_type)
        :mnesia.create_schema([host])
@@ -17,7 +18,7 @@ defmodule Ecto.Mnesia.Storage do
   You may want to bring up table online without restarting.
   """
   def  bootstrap_table(table, fields, copy_type, host) do
-       model = :application.get_env(:ecto, :mnesia_metainfo, Ecto.Adapter.Mnesia)
+       model = Confex.get(:ecto_mnesia, TestRepo)[:mnesia_metainfo]
        :mnesia.create_table(table, [{:attributes, fields},{copy_type, [host]}])
        Enum.map(model.meta, fn {table, _} -> create_keys(model, table) end)
   end
@@ -35,9 +36,8 @@ defmodule Ecto.Mnesia.Storage do
                               _ -> :skip end
   end
 
-  def  storage_down(x) do
-       :mnesia.stop
-       :mnesia.delete_schema([Kernel.node])
-       Logger.info("Storage up: #{inspect x}")
+  def start_link(_, _, _, _, _) do
+    storage_up([])
+    {:ok, self()}
   end
 end
