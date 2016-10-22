@@ -25,16 +25,5 @@ use Mix.Config
 #     :var_name, "${ENV_VAR_NAME}"
 
 # Configure your database
-config :ecto_mnesia, Ecto.Mnesia.Repo,
-  adapter: Ecto.Adapters.Mnesia
-
 config :ecto_mnesia,
-  ecto_repos: [] # [Ecto.Mnesia.Repo]
-
-# It is also possible to import configuration files, relative to this
-# directory. For example, you can emulate configuration per environment
-# by uncommenting the line below and defining dev.exs, test.exs and such.
-# Configuration from the imported file will override the ones defined
-# here (which is why it is important to import them last).
-#
-import_config "#{Mix.env}.exs"
+  ecto_repos: []

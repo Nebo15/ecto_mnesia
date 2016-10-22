@@ -1,2 +1,2 @@
+Code.require_file "support/test_repo.exs", __DIR__
 ExUnit.start()
-Ecto.Adapters.SQL.Sandbox.mode(Ecto.Mnesia.Repo, :manual)
