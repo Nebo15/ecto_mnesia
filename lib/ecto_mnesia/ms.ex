@@ -1,16 +1,42 @@
 defmodule Ecto.Query.MatchSpec do
+  @type spec :: :ets.match_spec | :ets.compiled_match_spec
 
-  require Logger
+  @spec run(spec, tuple | [tuple]) :: { :ok, term } | { :error, term }
+  def run(spec, what) when is_tuple(what) do
+    if :ets.is_compiled_ms(spec) do
+      run(spec, [what]) |> List.first
+    else
+      :ets.test_ms(what, spec)
+    end
+  end
 
-  @spec compile!(:ets.match_spec) :: :ets.compiled_match_spec | no_return
-  def compile!(spec) do
-    case compile(spec) do
-      { :ok, spec } ->
-        spec
+  def run(spec, what) when what |> is_list do
+    if :ets.is_compiled_ms(spec) do
+      :ets.match_spec_run(what, spec)
+    else
+      case compile(spec) do
+        { :ok, spec } ->
+          :ets.match_spec_run(what, spec)
+
+        { :error, _ } = e ->
+          e
+      end
+    end
+  end
+
+  @spec run!(spec, tuple | [tuple]) :: term | no_return
+  def run!(spec, what) when what |> is_tuple do
+    case :ets.test_ms(what, spec) do
+      { :ok, result } ->
+        result
 
       { :error, reason } ->
-        raise SyntaxError, message: reason
+        raise RuntimeError, message: reason
     end
+  end
+
+  def run!(spec, what) when what |> is_list do
+    :ets.match_spec_run(what, :ets.match_spec_compile(spec))
   end
 
   @spec compile(:ets.match_spec) :: { :ok, :ets.compiled_match_spec } | { :error, term }
@@ -24,8 +50,18 @@ defmodule Ecto.Query.MatchSpec do
     end
   end
 
+  @spec compile!(:ets.match_spec) :: :ets.compiled_match_spec | no_return
+  def compile!(spec) do
+    case compile(spec) do
+      { :ok, spec } ->
+        spec
+
+      { :error, reason } ->
+        raise SyntaxError, message: reason
+    end
+  end
+
   defmacrop execute(desc, rest) do
-    Logger.info("Desc: #{inspect desc}")
     quote do
       descriptor(unquote(desc), __CALLER__) |> transform(unquote(rest), __CALLER__) |> Macro.escape(unquote: true)
     end
@@ -38,7 +74,6 @@ defmodule Ecto.Query.MatchSpec do
 
   # Ecto.Query.MatchSpec.match a in { _, _, _ }, *
   defmacro match({ :in, _, [_, { :{}, _, _ }] } = desc, rest) do
-    Logger.info("in unknown MatchSpec macro param #{inspect desc}, #{inspect rest}")
     execute(desc, rest)
   end
 
@@ -55,12 +90,6 @@ defmodule Ecto.Query.MatchSpec do
   # Ecto.Query.MatchSpec.match { a, b }, *
   defmacro match({ _, _ } = desc, rest) do
     execute(desc, rest)
-  end
-
-  defmacro match(desc, rest) do
-    Logger.info("unknown MatchSpec macro param: #{inspect desc}")
-    Logger.info("#{inspect rest}")
-    execute([], rest)
   end
 
   defp descriptor({ :{}, _, desc }, __CALLER__) do
