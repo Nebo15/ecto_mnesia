@@ -3,42 +3,6 @@ defmodule SellOfferTest do
   require Logger
   import Ecto.Query
 
-  @sell_offer %{
-    loan_id: "my_loan_1",
-    trader: "vivus.lv",
-    book_value: Decimal.new(100.5),
-    book_date: DateTime.utc_now(),
-    end_date: DateTime.utc_now(),
-    min_price_rate: Decimal.new(1.1345),
-    max_shared_apr: Decimal.new(0.15),
-    dividable: false,
-    guaranteed: true,
-    relative_flows: [%{
-      date: DateTime.utc_now(),
-      amount: Decimal.new(100.5)
-    }],
-    criteria: %{
-      borrower_parameters: %{
-        age_group: "18-22",
-        income_amount: Decimal.new(1000),
-        delinquent_payments: 0,
-        max_dpd: 3
-      },
-      loan_parameters: %{
-        product_type: "PDL",
-        risk_class: "A",
-        risk_subclass: "A",
-        duration_group: "ANY",
-        currency: "EUR",
-        outstanding_principal: Decimal.new(105),
-        status: "NEW",
-        apr: Decimal.new(36.5),
-        extended: false,
-        is_additional_withdrawal: false
-      }
-    }
-  }
-
   test "Select Fields" do
        TestRepo.insert(%SellOffer{age: 10}, [])
        TestRepo.insert(%SellOffer{age: 20}, [])

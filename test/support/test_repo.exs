@@ -73,6 +73,24 @@ defmodule BuyOffer do
 
 end
 
+defmodule MySchema do
+  use Ecto.Schema
+
+  schema "my_schema" do
+    field :x, :string
+    field :y, :binary
+  end
+end
+
+defmodule MySchemaNoPK do
+  use Ecto.Schema
+
+  @primary_key false
+  schema "my_schema" do
+    field :x, :string
+  end
+end
+
 defmodule TestModel do
     @moduledoc """
     Marketplace Metainfo with configuration for `Ecto.Adapter.Mnesia`.
@@ -91,7 +109,9 @@ defmodule TestModel do
     def meta, do: [id_seq:     [:thing, :id],
                    config:     [:key, :value],
                    buy_offer:  BuyOffer.__schema__(:fields),
-                   sell_offer: SellOffer.__schema__(:fields)]
+                   sell_offer: SellOffer.__schema__(:fields),
+                   my_schema:  MySchema.__schema__(:fields),
+                   my_schema_no_pk:  MySchemaNoPK.__schema__(:fields)]
 
 end
 
