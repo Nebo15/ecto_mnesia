@@ -1,4 +1,5 @@
-defmodule Ecto.Query.MatchSpec do
+defmodule Ecto.Mnesia.MatchSpecQuery do
+  @moduledoc false
   @type spec :: :ets.match_spec | :ets.compiled_match_spec
 
   @spec run(spec, tuple | [tuple]) :: { :ok, term } | { :error, term }
@@ -437,7 +438,7 @@ defmodule Ecto.Query.MatchSpec do
   end
 
   defp external(whole) do
-    { :unquote, [], quote do: [Ecto.Query.MatchSpec.convert(unquote(whole))] }
+    { :unquote, [], quote do: [convert(unquote(whole))] }
   end
 
   @doc false
