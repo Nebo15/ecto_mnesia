@@ -19,6 +19,8 @@ env:
     # Docker credentials
     - secure: "..."
 install:
+  - mix local.hex --force
+  - mix local.rebar --force
   - mix deps.get
 script:
   # Run all tests except pending ones
