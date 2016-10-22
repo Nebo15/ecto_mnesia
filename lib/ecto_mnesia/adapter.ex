@@ -48,34 +48,34 @@ defmodule Ecto.Mnesia.Adapter do
     @doc """
     Convert Ecto Qeury to Erlang MatchSpec, include caching.
     """
-    def  prepare(:all, %{from: {table, model},
-                         select: %{expr: expr, fields: fields, take: take} = select,
+    def  prepare(:all, %{from: {table, _model},
+                         select: %{expr: _expr, fields: _fields, take: take},
                          wheres: wheres,
                          order_bys: ordering} = arg) do
 
          :io.format("Args: ~p~n",[arg])
          :io.format("Take: ~p~n",[take])
 
-         fields    = pre_fields(fields, model)
-         #spec     = Ecto.Mnesia.Query.match_spec(model, table, fields: fields, wheres: wheres)
+         # fields    = pre_fields(fields, model)
+         # spec     = Ecto.Mnesia.Query.match_spec(model, table, fields: fields, wheres: wheres)
          spec      = wheres
          ordering  = Ecto.Mnesia.Query.ordering(ordering, table)
 
          {:cache, {:all, spec, ordering}}
     end
 
-    def  prepare(:delete_all, %{from: {table, _},
+    def  prepare(:delete_all, %{from: {_table, _},
                                 select: nil,
-                                wheres: wheres} = arg) do
-
-         {:cache, {:delete_all, Ecto.Mnesia.Query.match_spec(table, nil, wheres, nil)}}
+                                wheres: _wheres}) do
+        raise "Not supported by adapter"
+        # {:cache, {:delete_all, Ecto.Mnesia.Query.match_spec(table, nil, wheres, nil)}}
     end
 
     @doc """
     Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
     """
-    def  execute(repo, %{sources: {{table, model}}, fields: fields, take: take},
-                        {:cache, fun, {:all, wheres, ordering}} = query,
+    def  execute(_repo, %{sources: {{table, model}}, fields: fields, take: take},
+                        {:cache, _fun, {:all, wheres, _ordering}} = query,
                         params, preprocess, options) do
 
 
@@ -104,10 +104,10 @@ defmodule Ecto.Mnesia.Adapter do
     @doc """
     Insert Ecto Schema Instance to mnesia database.
     """
-    def  insert(_repo, %{schema: schema, source: {_, table}}, params, autogen, opts) do
+    def  insert(_repo, %{schema: schema, source: {_, table}}, params, _autogen, _opts) do
 
          rec = Ecto.Mnesia.Query.make_tuple(schema, params, String.to_atom table)
-         res = :mnesia.dirty_write(rec)
+         :mnesia.dirty_write(rec)
 
          {:ok, []}
     end
@@ -115,17 +115,17 @@ defmodule Ecto.Mnesia.Adapter do
     @doc """
     Delete Record of Ecto Schema Instace from mnesia database.
     """
-    def  delete(repo, %{schema: schema}, _, _) do
+    def  delete(_repo, %{schema: schema}, _, _) do
          {:ok, schema}
     end
 
     @doc """
     Update Record of Ecto Schema Instance in  mnesia database.
     """
-    def  update(_repo, %{schema: schema, source: {_, table}} = _meta, params, filter, _autogen, _opts) do
+    def  update(_repo, %{schema: schema, source: {_, table}} = _meta, params, _filter, _autogen, _opts) do
 
          rec = Ecto.Mnesia.Query.make_tuple(schema, params, String.to_atom table)
-         res = :mnesia.dirty_write(rec)
+         :mnesia.dirty_write(rec)
 
          {:ok, []}
     end
@@ -168,7 +168,7 @@ defmodule Ecto.Mnesia.Adapter do
     @doc """
     Mnesia starting during Adapter boot.
     """
-    def start_link(_, _, _, _, _),     do: Application.start(:mnesia)
+    def ensure_all_started(_, _),     do: Application.ensure_all_started(:mnesia)
 
     @doc """
     Stopping Mnesia Adapter.
