@@ -1,0 +1,32 @@
+language: elixir
+cache:
+  directories:
+  - deps
+services:
+  - postgresql
+addons:
+  postgresql: "9.5"
+elixir:
+  - 1.3.2
+otp_release:
+  - 18.2
+  - 19.1
+env:
+  global:
+    - MIX_ENV=test
+    - DOCKER_HUB_ACCOUNT=place_your_account_name_here
+    - MAIN_BRANCHES="master develop staging" # Branches on which you want version to be incremented
+    # Docker credentials
+    - secure: "..."
+install:
+  - mix deps.get
+script:
+  # Run all tests except pending ones
+  - "mix test --exclude pending --trace"
+  # Submit code coverage report to Coveralls
+  - "mix coveralls.travis"
+  # Run static code analysis
+  - "mix credo"
+  # Check code style
+  - "mix dogma"
+
