@@ -34,7 +34,7 @@ defmodule Ecto.Mnesia.Query do
   end
   def  unholders({op, [], [left, right]} = a, table, params) do
        Logger.debug("Op #{inspect a}")
-       {transmute(op), unholders(left, table, params), unholders(right, table, params)} end
+       {op, unholders(left, table, params), unholders(right, table, params)} end
 
   def  placeholders(table) do
        fields   = table |> String.to_atom |> :mnesia.table_info(:attributes)
