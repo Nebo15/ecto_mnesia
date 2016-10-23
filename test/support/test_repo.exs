@@ -1,6 +1,6 @@
 # TODO: describe what is this and how to build it
 Application.put_env(:ecto_mnesia, TestRepo,
-  mnesia_metainfo: TestModel,
+  mnesia_meta_schema: TestModel,
   adapter: Ecto.Mnesia.Adapter,
   mnesia_backend:  :ram_copies)
 

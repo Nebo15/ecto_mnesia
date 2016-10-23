@@ -24,7 +24,7 @@ defmodule Ecto.Mnesia.Adapter do
 
   ## usage in `config.exs`
 
-      config :ecto, :mnesia_metainfo, Sample.Model
+      config :ecto, :mnesia_meta_schema, Sample.Model
       config :ecto, :mnesia_backend,  :ram_copies
   """
 
@@ -57,7 +57,7 @@ defmodule Ecto.Mnesia.Adapter do
   This method is called from `Ecto.Repo.Supervisor.init/2`.
   """
   def child_spec(_repo, opts) do
-    Supervisor.Spec.worker(Ecto.Mnesia.Storage, opts)
+    Supervisor.Spec.worker(Ecto.Mnesia.Storage, [opts])
   end
 
   @doc """
