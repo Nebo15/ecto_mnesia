@@ -34,7 +34,7 @@ defmodule Ecto.Mnesia.Query do
   end
   def  unholders({op, [], [left, right]} = a, table, params) do
        Logger.debug("Op #{inspect a}")
-       {op, unholders(left, table, params), unholders(right, table, params)} end
+       {transmute(op), unholders(left, table, params), unholders(right, table, params)} end
 
   def  placeholders(table) do
        fields   = table |> String.to_atom |> :mnesia.table_info(:attributes)
@@ -71,7 +71,9 @@ defmodule Ecto.Mnesia.Query do
        List.foldl(params, List.to_tuple([table | List.duplicate(nil, length(fields))]),
           fn ({k, v}, acc) -> :erlang.setelement(:string.str(fields,[k]) + 1, acc, transmute(v)) end) end
 
-  def  transmute(%Decimal{coef: x, exp: y, sign: z}), do: x
+  def  transmute(%Decimal{coef: x, exp: y, sign: z}) do
+       x * :math.pow(10, y)
+  end
   def  transmute(x), do: x
 
   def  ordering([], _), do: []
