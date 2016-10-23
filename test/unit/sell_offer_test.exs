@@ -57,7 +57,7 @@ defmodule SellOfferTest do
        res = TestRepo.all(query)
 
        Logger.info("Res 3: #{inspect res}")
-       assert length(res) == 3
+       assert length(res) == 2
 
   end
 
