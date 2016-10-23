@@ -63,7 +63,7 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   Automatically generate next ID.
   """
-  def autogenerate(:id),        do: :increment
+  def autogenerate(:id),        do: nil
   def autogenerate(:embed_id),  do: Ecto.UUID.generate()
   def autogenerate(:binary_id), do: Ecto.UUID.bingenerate()
 

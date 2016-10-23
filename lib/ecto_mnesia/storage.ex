@@ -109,8 +109,10 @@ defmodule Ecto.Mnesia.Storage do
   So we simply handle whatever Repo.Supervisor is sending to us and initiating Mnesia tables.
   """
   def start_link(conn_mod, _opts \\ []) do
-    conf = Confex.get(conn_mod[:otp_app], conn_mod[:repo])
-    storage_up(conf)
+    conn_mod[:otp_app]
+    |> Confex.get(conn_mod[:repo])
+    |> storage_up
+
     {:ok, self()}
   end
 end

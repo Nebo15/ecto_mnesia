@@ -6,8 +6,8 @@ defmodule Ecto.Mnesia.Query do
 
   def  match_spec(model, tab, fields, wheres, params) do
        model = tab |> String.to_atom |> :mnesia.table_info(:attributes)
-       Logger.info("MSPEC FIELDS #{inspect fields}")
-       Logger.info("MSPEC SELECT #{inspect model}")
+       Logger.debug("MSPEC FIELDS #{inspect fields}")
+       Logger.debug("MSPEC SELECT #{inspect model}")
        [{head(tab), guards(wheres, tab, params, []), [[:"$_"]]}] end
                                                      #[match_pos(fields,model)]}] end
 
@@ -17,23 +17,23 @@ defmodule Ecto.Mnesia.Query do
 
   def  unholders({{:., [], [{:&, [], [0]}, name]}, _, []} = a, table, params) do
        dict = placeholders(table)
-       Logger.info("Dot #{inspect dict}")
-       Logger.info("Name #{inspect name}")
-       Logger.info("Table #{inspect table}")
-       Logger.info("Params #{inspect params}")
+       Logger.debug("Dot #{inspect dict}")
+       Logger.debug("Name #{inspect name}")
+       Logger.debug("Table #{inspect table}")
+       Logger.debug("Params #{inspect params}")
        value =  case List.keyfind(dict, name, 0) do
                {name, value} -> value;
                :undefined -> nil end
 #       value = table |> placeholders |> Dict.get(name)
-       Logger.info("Dot #{inspect value}")
+       Logger.debug("Dot #{inspect value}")
        value
        end
   def  unholders({:^, [], [index]} = a, table, params) do
-       Logger.info("Quote #{inspect a}")
+       Logger.debug("Quote #{inspect a}")
        transmute(:lists.nth(index+1,params))
   end
   def  unholders({op, [], [left, right]} = a, table, params) do
-       Logger.info("Op #{inspect a}")
+       Logger.debug("Op #{inspect a}")
        {op, unholders(left, table, params), unholders(right, table, params)} end
 
   def  placeholders(table) do
@@ -66,7 +66,7 @@ defmodule Ecto.Mnesia.Query do
        resolve(t, par, [{op, p, val} | acc]) end
 
   def  make_tuple(schema, params, table) do
-       Logger.info("Schema: #{inspect schema}")
+       Logger.debug("Schema: #{inspect schema}")
        fields = schema.__schema__(:fields)
        List.foldl(params, List.to_tuple([table | List.duplicate(nil, length(fields))]),
           fn ({k, v}, acc) -> :erlang.setelement(:string.str(fields,[k]) + 1, acc, transmute(v)) end) end
