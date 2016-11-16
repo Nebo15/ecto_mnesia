@@ -8,9 +8,8 @@ defmodule SellOffer do
     use Ecto.Schema
 
     schema "sell_offer" do
-      @primary_key {:id, :integer, autogenerate: true}
       field :trader_id,          :integer
-      field :loan_id,            :integer
+      field :loan_id,            :string
       field :book_value,         :integer
       field :min_price_rate,     :decimal
       field :max_shared_apr,     :decimal
@@ -19,8 +18,6 @@ defmodule SellOffer do
       field :status,             :string
       field :booked_at,          Ecto.DateTime
       field :ended_at,           Ecto.DateTime
-      field :created_at,         Ecto.DateTime
-      field :updated_at,         Ecto.DateTime
       field :age,                :integer
       field :income,             :decimal
       field :dpc,                :integer
@@ -35,6 +32,7 @@ defmodule SellOffer do
       field :loan_apr,           :decimal
       field :loan_is_prolonged,  :boolean
 
+      timestamps()
     end
 end
 
@@ -42,7 +40,6 @@ defmodule BuyOffer do
     use Ecto.Schema
 
     schema "buy_offer" do
-      @primary_key {:id, :integer, autogenerate: true}
       field :trader_id,                :string
       field :port_id,                  :string
       field :started_at,               Ecto.DateTime

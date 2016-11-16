@@ -1,63 +1,116 @@
 defmodule Ecto.Mnesia.Query do
   @moduledoc """
-  Ecto.Query converter interface for MatchSpec.
+  This module converts Ecto.Query AST to MatchSpec.
   """
   require Logger
 
-  def  match_spec(model, tab, fields, wheres, params) do
-       model = tab |> String.to_atom |> :mnesia.table_info(:attributes)
-       Logger.debug("MSPEC FIELDS #{inspect fields}")
-       Logger.debug("MSPEC SELECT #{inspect model}")
-       [{head(tab), guards(wheres, tab, params, []), [[:"$_"]]}] end
-                                                     #[match_pos(fields,model)]}] end
+  @bool_functions [:is_atom, :is_float, :is_integer, :is_list, :is_number, :is_pid,
+                   :is_port, :is_reference, :is_tuple, :is_map, :is_binary, :is_function,
+                   :is_record, :is_seq_trace, :and, :or, :not, :xor, :andalso, :orelse]
 
-  def  head(table) do
-       table |> placeholders |> Dict.values
-             |> Enum.into([String.to_atom(table)]) |> List.to_tuple end
+  @guard_functions [:abs, :element, :hd, :length, :node, :round, :size, :tl, :trunc, :+, :-, :*,
+                   :div, :rem, :band, :bor, :bxor, :bnot, :bsl, :bsr, :>, :>=, :<, :"=<", :"=:=",
+                   :==, :"=/=", :"/=", :self, :get_tcw] ++ @bool_functions
 
-  def  unholders({{:., [], [{:&, [], [0]}, name]}, _, []} = a, table, params) do
-       dict = placeholders(table)
-       Logger.debug("Dot #{inspect dict}")
-       Logger.debug("Name #{inspect name}")
-       Logger.debug("Table #{inspect table}")
-       Logger.debug("Params #{inspect params}")
-       value =  case List.keyfind(dict, name, 0) do
-               {name, value} -> value;
-               :undefined -> nil end
-#       value = table |> placeholders |> Dict.get(name)
-       Logger.debug("Dot #{inspect value}")
-       value
-       end
-  def  unholders({:^, [], [index]} = a, table, params) do
-       Logger.debug("Quote #{inspect a}")
-       transmute(:lists.nth(index+1,params))
+  def match_spec(model, table, fields, wheres, opts) do
+    model = table |> String.to_atom |> :mnesia.table_info(:attributes)
+    [{match_head(table), match_conditions(wheres, table, opts, []), [match_body(fields, model)]}]
   end
-  def  unholders({op, [], [left, right]} = a, table, params) do
-       Logger.debug("Op #{inspect a}")
-       {op, unholders(left, table, params), unholders(right, table, params)} end
 
-  def  placeholders(table) do
-       fields   = table |> String.to_atom |> :mnesia.table_info(:attributes)
-       placeholders = 1..length(fields) |> Enum.map(&"$#{&1}") |> Enum.map(&String.to_atom/1)
-       fields |> Enum.zip(placeholders) end
+  def match_head(table) do
+    table
+    |> placeholders
+    |> Dict.values
+    |> Enum.into([String.to_atom(table)])
+    |> List.to_tuple
+  end
+
+  def match_conditions([], _table, _opts, acc), do: acc
+  def match_conditions([%{expr: expr} | tail], table, opts, acc) do
+    condition = match_condition(expr, table, opts)
+    match_conditions(tail, table, opts, [condition | acc])
+  end
+
+  def match_body([{:&, [], [0, fields, _fields_count]}], model) do
+    fields
+    |> List.foldl([], fn(field, acc) ->
+      pos = model
+        |> Enum.find_index(&(&1 == field))
+        |> Kernel.+(1)
+        |> Integer.to_string
+        |> (&String.to_atom("$" <> &1)).()
+
+      acc ++ [pos]
+    end)
+  end
+
+  # :in a special case when we need to create special guard
+  # http://stackoverflow.com/questions/2910393/erlang-mnesia-equivalent-of-sql-select-from-where-field-in-value1-value2-valu
+  # def match_condition({:in, [], [{{:., [], [{:&, [], []}, field]}, [], []}, parameters]}, table, opts) do
+  #   [{{'_', V}, [], ['$_']} || V <- parameters]
+
+  #   IO.inspect [field, parameter]
+  #   {:in, condition_expression(field, table, opts), condition_expression(parameter, table, opts)}
+  # end
+
+  def match_condition({op, [], [field, parameter]}, table, opts) do
+    {guard_function_operation(op), condition_expression(field, table, opts), condition_expression(parameter, table, opts)}
+  end
+
+  def condition_expression({{:., [], [{:&, [], [0]}, name]}, _, []} = a, table, opts) do
+    dict = placeholders(table)
+    value = case List.keyfind(dict, name, 0) do
+      {name, value} -> value;
+      :undefined -> nil
+    end
+    # value = table |> placeholders |> Dict.get(name)
+    # Logger.debug("Dot #{inspect value}")
+    value
+  end
+
+  # Binded variable need to be casted to type that can be compared by Mnesia guard function
+  def condition_expression({:^, [], [index]}, table, opts) do
+    transmute(:lists.nth(index+1,opts))
+  end
+
+  # Recursively expand ecto query expressions and build conditions
+  def condition_expression({op, [], [left, right]} = expr, table, opts) do
+    {guard_function_operation(op), condition_expression(left, table, opts), condition_expression(right, table, opts)}
+  end
+
+  # Another part of this function is to use binded variables values
+  def condition_expression(raw_value, _table, _opts) do
+    raw_value
+  end
+
+  def placeholders(table) do
+    fields =
+      table |>
+      String.to_atom |>
+      :mnesia.table_info(:attributes)
+
+    placeholders =
+      1..length(fields)
+      |> Enum.map(&"$#{&1}")
+      |> Enum.map(&String.to_atom/1)
+
+    fields
+    |> Enum.zip(placeholders)
+  end
+
+  @doc """
+  Convert Ecto.Query operations to MatchSpec analogs. (Only ones that doesn't match.)
+  """
+  def guard_function_operation(:!=), do: :'/='
+  def guard_function_operation(:<=), do: :'=<'
+  def guard_function_operation(op), do: op
+
+
+
+  ###### Everything below need refactoring ######
 
   def  str(field, model),   do: Integer.to_string :string.str(model.__schema__(:fields),[field])
   def  str2(field, fields), do: Integer.to_string :string.str(fields,[field])
-
-  @doc false
-  def  match_pos(fields, model) do
-       fields |> Enum.map(fn
-           {{_, _, [_, field]}, _, _} -> String.to_atom("$" <> str2(field, model)) end) end
-
-  def  result([], _, acc), do: acc |> Enum.reverse
-  def  result([{{:., [], [{:&, [], [0]}, field]}, _, _} | t], table, acc) do
-       result(t, table, [field | acc]) end
-
-  def  guards([], _, params, acc) do acc end
-  def  guards([%{expr: {operator, [], [field, parameter]}} | t], table, params, acc) do
-       :io.format("Guard: ~p~n",[{operator, field, parameter}])
-       guard = {operator, unholders(field, table, params), unholders(parameter, table, params) }
-       guards(t, table, params, [guard | acc]) end
 
   def  resolve([], _, acc), do: acc
   def  resolve([{op, p, {:^, [], [idx]}} | t], par, acc) do
@@ -65,23 +118,23 @@ defmodule Ecto.Mnesia.Query do
   def  resolve([{op, p, val} | t], par, acc) do
        resolve(t, par, [{op, p, val} | acc]) end
 
-  def  make_tuple(schema, params, table) do
-       Logger.debug("Schema: #{inspect schema}")
-       fields = schema.__schema__(:fields)
-       List.foldl(params, List.to_tuple([table | List.duplicate(nil, length(fields))]),
-          fn ({k, v}, acc) -> :erlang.setelement(:string.str(fields,[k]) + 1, acc, transmute(v)) end) end
-
   def  transmute(%Decimal{coef: x, exp: y, sign: z}) do
        x * :math.pow(10, y)
   end
   def  transmute(x), do: x
 
-  def  ordering([], _), do: []
-  def  ordering(order_bys, table), do: ordering(order_bys, table, [])
+  @doc """
+  Transform Ecto Query `order_bys` AST to Mnesia ordering selector.
+  """
+  def ordering([], _), do: []
+  def ordering(order_bys, table), do: ordering(order_bys, table, [])
 
-  def  ordering([], _, acc), do: acc |> Enum.reverse
-  def  ordering([%{expr: [asc: {{:., [], [{:&, [], [0]}, field]}, _,_}]} | t], table, acc) do
-       placeholder = table |> placeholders |> Dict.get(field)
-       ordering(t, table, [placeholder | acc]) end
+  def ordering([], _, acc), do: acc |> Enum.reverse
+  def ordering([%{expr: [asc: {{:., [], [{:&, [], [0]}, field]}, _,_}]} | t], table, acc) do
+    placeholder = table
+    |> placeholders
+    |> Dict.get(field)
 
+    ordering(t, table, [placeholder | acc])
+  end
 end
