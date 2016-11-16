@@ -41,9 +41,8 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   This function tells Ecto that we don't support DDL transactions.
   """
-  def supports_ddl_transaction? do
-    false
-  end
+  def supports_ddl_transaction?, do: false
+  def in_transaction?(_repo), do: supports_ddl_transaction?()
 
   @doc """
   Ensure all applications necessary to run the adapter are started.
@@ -63,8 +62,8 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   Automatically generate next ID.
   """
-  def autogenerate(:id),        do: nil
-  def autogenerate(:embed_id),  do: Ecto.UUID.generate()
+  def autogenerate(:id), do: nil
+  def autogenerate(:embed_id), do: Ecto.UUID.generate()
   def autogenerate(:binary_id), do: Ecto.UUID.bingenerate()
 
   @doc """
