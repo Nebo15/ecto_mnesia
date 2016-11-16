@@ -10,16 +10,12 @@ defmodule Ecto.Mnesia.Storage do
   @doc """
   Start the Mnesia database.
   """
-  def start do
-    Mnesia.start
-  end
+  def start, do: Mnesia.start
 
   @doc """
   Stop the Mnesia database.
   """
-  def stop do
-    Mnesia.stop
-  end
+  def stop, do: Mnesia.stop
 
   @doc """
   Creates the storage given by options.
