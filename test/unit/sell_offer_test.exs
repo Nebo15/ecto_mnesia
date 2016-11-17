@@ -4,12 +4,19 @@ defmodule SellOfferTest do
   import Ecto.Query
 
   setup_all do
-    TestRepo.insert(%SellOffer{age: 26, loan_id: "loan-007", income: 1000.0, dpc: 20, dpd: 30, loan_risk_class: "AB",
-                              trader_id: 123, loan_duration: 100, loan_product_type: "100",
-                              max_shared_apr: Decimal.new(9.23),
-                              loan_status: "ok", loan_is_prolonged: true, guaranteed: true})
+    TestRepo.insert(%SellOffer{
+      age: 26,
+      loan_id: "loan-007",
+      income: 1000.0, dpc: 20, dpd: 30, loan_risk_class: "AB",
+      trader_id: 123, loan_duration: 100, loan_product_type: "100",
+      max_shared_apr: Decimal.new(9.23), loan_status: "ok",
+      loan_is_prolonged: true, guaranteed: true
+    })
 
-    TestRepo.insert(%SellOffer{age: 23, loan_id: "loan-008"})
+    TestRepo.insert(%SellOffer{
+      age: 23,
+      loan_id: "loan-008"
+    })
 
     :ok
   end
@@ -199,6 +206,16 @@ defmodule SellOfferTest do
       } = rec2
     end
 
+    test "with `not`" do
+      [result] = TestRepo.all from so in SellOffer,
+        select: so,
+        where: not (so.age == 26)
+
+      assert %SellOffer{
+        loan_id: "loan-008"
+      } = result
+    end
+
     test "with `or`, `and` and `(..)`" do
       [result] = TestRepo.all from so in SellOffer,
         select: so,
@@ -215,21 +232,60 @@ defmodule SellOfferTest do
       assert 2 == length(result)
     end
 
-    # test "with `in`" do
-    #   [rec1,rec2] = TestRepo.all from so in SellOffer,
-    #     select: so,
-    #     where: so.age in [21, 23]
+    test "with `in`" do
+      [rec1, rec2] = TestRepo.all from so in SellOffer,
+        select: so,
+        where: so.age in [23, 26]
 
-    #   assert %SellOffer{
-    #     loan_id: "loan-007"
-    #   } = rec1
+      assert %SellOffer{
+        loan_id: "loan-007"
+      } = rec1
 
-    #   assert %SellOffer{
-    #     loan_id: "loan-008"
-    #   } = rec2
-    # end
+      assert %SellOffer{
+        loan_id: "loan-008"
+      } = rec2
+    end
+
+    test "with `is_nil`" do
+      result = TestRepo.all from so in SellOffer,
+        select: so,
+        where: is_nil(so.min_price_rate)
+
+      assert 2 == length(result)
+    end
   end
 
+  # describe "query limit" do
+  #   test "limits result" do
+  #     result = TestRepo.all from so in SellOffer,
+  #       limit: 1337
+
+  #     assert 1 == length(result)
+  #   end
+  # end
+
+  # describe "order by" do
+  #   test "field" do
+  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
+  #       order_by: so.age
+
+  #     assert rec1.age > rec2.age
+  #   end
+
+  #   test "field asc" do
+  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
+  #       order_by: [asc: so.age]
+
+  #     assert rec1.age > rec2.age
+  #   end
+
+  #   test "field desc" do
+  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
+  #       order_by: [desc: so.age]
+
+  #     assert rec1.age < rec2.age
+  #   end
+  # end
 
   # test "Match Against Buy Offers" do
 

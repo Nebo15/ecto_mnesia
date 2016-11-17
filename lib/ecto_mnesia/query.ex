@@ -12,9 +12,9 @@ defmodule Ecto.Mnesia.Query do
                    :div, :rem, :band, :bor, :bxor, :bnot, :bsl, :bsr, :>, :>=, :<, :"=<", :"=:=",
                    :==, :"=/=", :"/=", :self, :get_tcw] ++ @bool_functions
 
-  def match_spec(model, table, fields, wheres, opts) do
-    model = table |> String.to_atom |> :mnesia.table_info(:attributes)
-    [{match_head(table), match_conditions(wheres, table, opts, []), [match_body(fields, model)]}]
+  def match_spec(_schema, table, fields, wheres, opts) do
+    schema = table |> String.to_atom |> :mnesia.table_info(:attributes)
+    [{match_head(table), match_conditions(wheres, table, opts, []), [match_body(fields, schema)]}]
   end
 
   def match_head(table) do
@@ -31,10 +31,10 @@ defmodule Ecto.Mnesia.Query do
     match_conditions(tail, table, opts, [condition | acc])
   end
 
-  def match_body([{:&, [], [0, fields, _fields_count]}], model) do
+  def match_body([{:&, [], [0, fields, _fields_count]}], schema) do
     fields
     |> List.foldl([], fn(field, acc) ->
-      pos = model
+      pos = schema
         |> Enum.find_index(&(&1 == field))
         |> Kernel.+(1)
         |> Integer.to_string
@@ -44,23 +44,41 @@ defmodule Ecto.Mnesia.Query do
     end)
   end
 
-  # :in a special case when we need to create special guard
-  # http://stackoverflow.com/questions/2910393/erlang-mnesia-equivalent-of-sql-select-from-where-field-in-value1-value2-valu
-  # def match_condition({:in, [], [{{:., [], [{:&, [], []}, field]}, [], []}, parameters]}, table, opts) do
-  #   [{{'_', V}, [], ['$_']} || V <- parameters]
-
-  #   IO.inspect [field, parameter]
-  #   {:in, condition_expression(field, table, opts), condition_expression(parameter, table, opts)}
-  # end
-
-  def match_condition({op, [], [field, parameter]}, table, opts) do
-    {guard_function_operation(op), condition_expression(field, table, opts), condition_expression(parameter, table, opts)}
+  # `is_nil` is a special case when we need to :== with nil value
+  def match_condition({:is_nil, [], [field]}, table, opts) do
+    {:==, condition_expression(field, table, opts), nil}
   end
 
-  def condition_expression({{:., [], [{:&, [], [0]}, name]}, _, []} = a, table, opts) do
+  # `:in` is a special case when we need to expand it to multiple `:or`'s
+  def match_condition({:in, [], [field, parameters]}, table, opts) do
+    field = condition_expression(field, table, opts)
+
+    parameters
+    |> Enum.map(fn parameter ->
+      {:==, field, parameter}
+    end)
+    |> List.insert_at(0, :or)
+    |> List.to_tuple
+  end
+
+  # Conditions that have one argument. Functions (is_nil, not).
+  def match_condition({op, [], [field]}, table, opts) do
+    {guard_function_operation(op), condition_expression(field, table, opts)}
+  end
+
+  # Other conditions with multiple arguments (<, >, ==, !=, etc)
+  def match_condition({op, [], [field, parameter]}, table, opts) do
+    {
+      guard_function_operation(op),
+      condition_expression(field, table, opts),
+      condition_expression(parameter, table, opts)
+    }
+  end
+
+  def condition_expression({{:., [], [{:&, [], [0]}, name]}, _, []}, table, _opts) do
     dict = placeholders(table)
     value = case List.keyfind(dict, name, 0) do
-      {name, value} -> value;
+      {_name, value} -> value;
       :undefined -> nil
     end
     # value = table |> placeholders |> Dict.get(name)
@@ -69,12 +87,12 @@ defmodule Ecto.Mnesia.Query do
   end
 
   # Binded variable need to be casted to type that can be compared by Mnesia guard function
-  def condition_expression({:^, [], [index]}, table, opts) do
-    transmute(:lists.nth(index+1,opts))
+  def condition_expression({:^, [], [index]}, _table, opts) do
+    Ecto.Mnesia.Adapter.Schema.cast_type(:lists.nth(index + 1, opts))
   end
 
   # Recursively expand ecto query expressions and build conditions
-  def condition_expression({op, [], [left, right]} = expr, table, opts) do
+  def condition_expression({op, [], [left, right]}, table, opts) do
     {guard_function_operation(op), condition_expression(left, table, opts), condition_expression(right, table, opts)}
   end
 
@@ -104,24 +122,6 @@ defmodule Ecto.Mnesia.Query do
   def guard_function_operation(:!=), do: :'/='
   def guard_function_operation(:<=), do: :'=<'
   def guard_function_operation(op), do: op
-
-
-
-  ###### Everything below need refactoring ######
-
-  def  str(field, model),   do: Integer.to_string :string.str(model.__schema__(:fields),[field])
-  def  str2(field, fields), do: Integer.to_string :string.str(fields,[field])
-
-  def  resolve([], _, acc), do: acc
-  def  resolve([{op, p, {:^, [], [idx]}} | t], par, acc) do
-       resolve(t, par, [{op, p, Enum.at(par, idx)} | acc]) end
-  def  resolve([{op, p, val} | t], par, acc) do
-       resolve(t, par, [{op, p, val} | acc]) end
-
-  def  transmute(%Decimal{coef: x, exp: y, sign: z}) do
-       x * :math.pow(10, y)
-  end
-  def  transmute(x), do: x
 
   @doc """
   Transform Ecto Query `order_bys` AST to Mnesia ordering selector.

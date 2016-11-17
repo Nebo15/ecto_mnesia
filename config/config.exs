@@ -29,3 +29,4 @@ config :ecto_mnesia,
   ecto_repos: []
 
 config :ecto_mnesia, :stacktrace_depth, 20
+config :ex_unit, capture_log: true

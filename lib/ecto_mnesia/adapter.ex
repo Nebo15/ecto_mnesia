@@ -88,54 +88,45 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   Prepares are called by Ecto before `execute/6` methods.
   """
-
-
-
-
-
-
-  ##### TODO refactor everything above this line :)
-
-  @doc """
-  Convert Ecto Query to Erlang MatchSpec, include caching.
-  """
-  def  prepare(:all, %{from: {table, _schema},
-                       select: %{expr: _expr, fields: _fields, take: take},
+  def prepare(:all, %{from: {table, _schema},
+                       select: %{expr: _expr, fields: _fields, take: _take},
                        wheres: wheres,
-                       order_bys: ordering} = arg) do
+                       order_bys: ordering,
+                       limit: limit} = dbg) do
+    Logger.debug("Args: #{inspect dbg}")
+    Logger.debug("Limit: #{inspect limit}")
+    # :io.format("Take: ~p~n",[take])
+    # :io.format("Expr: ~p~n",[expr])
+    # :io.format("Field: ~p~n",[fields])
 
-       # :io.format("Args: ~p~n",[arg])
-       # :io.format("Take: ~p~n",[take])
-       # :io.format("Expr: ~p~n",[expr])
-       # :io.format("Field: ~p~n",[fields])
+    # fields    = pre_fields(fields, schema)
+    # spec     = Query.match_spec(schema, table, fields: fields, wheres: wheres)
+    spec      = wheres
+    ordering  = Ecto.Mnesia.Adapter.Ordering.get_ordering_fn(ordering, table)
 
-       # fields    = pre_fields(fields, schema)
-       # spec     = Query.match_spec(schema, table, fields: fields, wheres: wheres)
-       spec      = wheres
-       ordering  = Query.ordering(ordering, table)
-
-       {:cache, {:all, spec, ordering}}
+    {:cache, {:all, spec, ordering}}
   end
 
-  def  prepare(:delete_all, %{from: {_table, _}, select: nil, wheres: _wheres}) do
-      raise "Not supported by adapter"
-      # {:cache, {:delete_all, Query.match_spec(table, nil, wheres, nil)}}
+  def prepare(:delete_all, %{from: {_table, _}, select: nil, wheres: _wheres}) do
+    raise "Not supported by adapter"
+    # {:cache, {:delete_all, Query.match_spec(table, nil, wheres, nil)}}
   end
 
   @doc """
   Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   """
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:cache, _fun, {:all, wheres, _ordering}} = query,
-                      params, preprocess, options) do
+                      {:cache, _fun, {:all, wheres, ordering_fn}} = query,
+                      params, preprocess, _opts) do
     match_spec = Query.match_spec(schema, table, fields, wheres, params)
 
-    Logger.debug("Executing Mnesia match_spec #{inspect match_spec}")
+    Logger.debug("Executing Mnesia match_spec #{inspect match_spec} built from query #{inspect query}")
 
     result = table
     |> String.to_atom
     |> Mnesia.dirty_select(match_spec)
     |> Schema.from_records(schema, fields, take, preprocess)
+    |> ordering_fn.()
 
     {length(result), result}
   end
@@ -148,7 +139,7 @@ defmodule Ecto.Mnesia.Adapter do
   - Process `on_conflict`
   - Process `returning`
   """
-  def insert(_repo, %{autogenerate_id: {pk_field, pk_type}, schema: schema, source: {_, table}}, params,
+  def insert(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}}, params,
              {_kind, _conflict_params, _} = _on_conflict, _returning, _opts) do
 
     table = String.to_atom(table)
@@ -167,7 +158,7 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   Delete Record of Ecto Schema Instace from mnesia database.
   """
-  def delete(_repo, %{schema: schema}, _, _) do
+  def delete(_repo, %{schema: _schema}, _, _) do
     raise "Not supported by adapter"
     # {:ok, schema}
   end
@@ -182,7 +173,7 @@ defmodule Ecto.Mnesia.Adapter do
     {:ok, []}
   end
 
-  def  insert_all(_, _, _, _, _, _, _), do: raise "Not supported by adapter"
+  def insert_all(_, _, _, _, _, _, _), do: raise "Not supported by adapter"
 
   @doc """
   Retrieve all records from the given table using `mnesia:all_keys`.
@@ -206,9 +197,6 @@ defmodule Ecto.Mnesia.Adapter do
   end
 
   @doc false
-  def  load(_, value),               do: {:ok, value}
-
-  def  dumpers(primitive, _type),    do: [primitive]
-
-  def  loaders(primitive, _type),    do: [primitive]
+  def dumpers(primitive, _type),    do: [primitive]
+  def loaders(primitive, _type),    do: [primitive]
 end
