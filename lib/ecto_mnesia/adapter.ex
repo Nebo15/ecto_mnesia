@@ -122,6 +122,7 @@ defmodule Ecto.Mnesia.Adapter do
 
     Logger.debug("Executing Mnesia match_spec #{inspect match_spec} built from query #{inspect query}")
 
+    # http://stackoverflow.com/questions/11967660/mnesia-query-cursors-working-with-them-in-practical-applications
     result = table
     |> String.to_atom
     |> Mnesia.dirty_select(match_spec)
@@ -136,11 +137,12 @@ defmodule Ecto.Mnesia.Adapter do
                       params, preprocess, _opts) do
     match_spec = Query.match_spec(schema, table, fields, wheres, params)
 
-    Logger.debug("Executing Mnesia match_spec #{inspect match_spec} built from query #{inspect query}")
+    Logger.debug("Executing Mnesia match_spec #{inspect match_spec}, limit #{inspect limit} built from query #{inspect query}")
 
-    result = table
-    |> String.to_atom
-    |> Mnesia.select(match_spec, limit, :read)
+    table = table |> String.to_atom
+    {result, _context} = Mnesia.activity(:async_dirty, &Mnesia.select/4, [table, match_spec, limit, :read])
+
+    result = result
     |> Schema.from_records(schema, fields, take, preprocess)
     |> ordering_fn.()
 

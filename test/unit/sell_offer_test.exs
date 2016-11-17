@@ -255,14 +255,14 @@ defmodule SellOfferTest do
     end
   end
 
-  # describe "query limit" do
-  #   test "limits result" do
-  #     result = TestRepo.all from so in SellOffer,
-  #       limit: 1337
+  describe "query limit" do
+    test "limits result" do
+      result = TestRepo.all from so in SellOffer,
+        limit: 1
 
-  #     assert 1 == length(result)
-  #   end
-  # end
+      assert 1 == length(result)
+    end
+  end
 
   describe "order by" do
     test "field" do
