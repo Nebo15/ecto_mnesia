@@ -24,8 +24,7 @@ defmodule Ecto.Mnesia.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :mnesia],
-     included_applications: [:confex, :ecto]]
+    [applications: [:logger, :mnesia, :confex, :ecto]]
   end
 
   # Specifies which paths to compile per environment.
