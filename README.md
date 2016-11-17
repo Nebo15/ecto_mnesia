@@ -1,6 +1,31 @@
 # Ecto.Mnesia
 
-**TODO: Add description**
+Ecto.Adapter for `mnesia` Erlang term database.
+
+It supports compound `mnesia` indexes (aka secondary indexes) in database setup.
+The implementation relies directly on `mnesia` application.
+Supports partial Ecto.Query to MatchSpec conversion for `mnesia:select` (and, join).
+MatchSpec converion utilities could be found in `Ecto.Mnesia.Query`.
+
+## Configuration Sample
+
+    defmodule Sample.Model do
+      require Record
+        def keys, do: [id_seq:       [:thing],
+                       topics:       [:whom,:who,:what],
+                       config:       [:key]]
+
+        def meta, do: [id_seq:       [:thing, :id],
+                       config:       [:key, :value],
+                       topics:       Model.Topics.__schema__(:fields)]
+    end
+
+where `Model.Topics` is `Ecto.Schema` object.
+
+## Usage in `config.exs`
+
+    config :ecto, :mnesia_meta_schema, Sample.Model
+    config :ecto, :mnesia_backend,  :ram_copies
 
 ## Installation
 

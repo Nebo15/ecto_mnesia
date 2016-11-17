@@ -102,9 +102,9 @@ defmodule Ecto.Mnesia.Adapter do
     # fields    = pre_fields(fields, schema)
     # spec     = Query.match_spec(schema, table, fields: fields, wheres: wheres)
     spec      = wheres
-    ordering  = Ecto.Mnesia.Adapter.Ordering.get_ordering_fn(ordering, table)
+    ordering_fn  = Ecto.Mnesia.Adapter.Ordering.get_ordering_fn(ordering)
 
-    {:cache, {:all, spec, ordering}}
+    {:cache, {:all, spec, ordering_fn, limit}}
   end
 
   def prepare(:delete_all, %{from: {_table, _}, select: nil, wheres: _wheres}) do
@@ -116,7 +116,7 @@ defmodule Ecto.Mnesia.Adapter do
   Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   """
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:cache, _fun, {:all, wheres, ordering_fn}} = query,
+                      {:cache, _fun, {:all, wheres, ordering_fn, nil}} = query,
                       params, preprocess, _opts) do
     match_spec = Query.match_spec(schema, table, fields, wheres, params)
 
@@ -125,6 +125,22 @@ defmodule Ecto.Mnesia.Adapter do
     result = table
     |> String.to_atom
     |> Mnesia.dirty_select(match_spec)
+    |> Schema.from_records(schema, fields, take, preprocess)
+    |> ordering_fn.()
+
+    {length(result), result}
+  end
+
+  def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
+                      {:cache, _fun, {:all, wheres, ordering_fn, %Ecto.Query.QueryExpr{expr: limit}}} = query,
+                      params, preprocess, _opts) do
+    match_spec = Query.match_spec(schema, table, fields, wheres, params)
+
+    Logger.debug("Executing Mnesia match_spec #{inspect match_spec} built from query #{inspect query}")
+
+    result = table
+    |> String.to_atom
+    |> Mnesia.select(match_spec, limit, :read)
     |> Schema.from_records(schema, fields, take, preprocess)
     |> ordering_fn.()
 
@@ -154,6 +170,9 @@ defmodule Ecto.Mnesia.Adapter do
       error -> {:error, error}
     end
   end
+
+  # TODO
+  # def stream()
 
   @doc """
   Delete Record of Ecto Schema Instace from mnesia database.

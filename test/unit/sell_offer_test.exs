@@ -264,28 +264,28 @@ defmodule SellOfferTest do
   #   end
   # end
 
-  # describe "order by" do
-  #   test "field" do
-  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
-  #       order_by: so.age
+  describe "order by" do
+    test "field" do
+      [rec1, rec2] = TestRepo.all from so in SellOffer,
+        order_by: so.age
 
-  #     assert rec1.age > rec2.age
-  #   end
+      assert rec1.age > rec2.age
+    end
 
-  #   test "field asc" do
-  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
-  #       order_by: [asc: so.age]
+    test "field asc" do
+      [rec1, rec2] = TestRepo.all from so in SellOffer,
+        order_by: [asc: so.age]
 
-  #     assert rec1.age > rec2.age
-  #   end
+      assert rec1.age > rec2.age
+    end
 
-  #   test "field desc" do
-  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
-  #       order_by: [desc: so.age]
+    test "field desc" do
+      [rec1, rec2] = TestRepo.all from so in SellOffer,
+        order_by: [desc: so.age]
 
-  #     assert rec1.age < rec2.age
-  #   end
-  # end
+      assert rec1.age < rec2.age
+    end
+  end
 
   # test "Match Against Buy Offers" do
 
