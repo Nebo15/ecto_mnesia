@@ -27,7 +27,6 @@ defmodule Ecto.Mnesia.Adapter do
       config :ecto, :mnesia_meta_schema, Sample.Model
       config :ecto, :mnesia_backend,  :ram_copies
   """
-
   require Logger
   alias :mnesia, as: Mnesia
   alias Ecto.Mnesia.{Schema, Ordering, Query, Table}
@@ -60,8 +59,8 @@ defmodule Ecto.Mnesia.Adapter do
   Automatically generate next ID.
   """
   def autogenerate(:id), do: nil
-  def autogenerate(:embed_id), do: Ecto.UUID.generate()
-  def autogenerate(:binary_id), do: Ecto.UUID.bingenerate()
+  def autogenerate(:embed_id), do: Ecto.UUID.autogenerate()
+  def autogenerate(:binary_id), do: Ecto.UUID.autogenerate()
 
   @doc """
   Return directory that stores Mnesia tables on local node.
@@ -70,22 +69,15 @@ defmodule Ecto.Mnesia.Adapter do
 
   @doc false
   # Prepares are called by Ecto before `execute/6` methods.
-  def prepare(:all, %Ecto.Query{wheres: wheres, limit: limit, order_bys: order_bys}) do
-    limit = limit |> get_limit()
-    ordering_fn = order_bys |> Ordering.get_ordering_fn()
-    {:cache, {:all, wheres, ordering_fn, limit}}
-  end
-
-  def prepare(:delete_all, %Ecto.Query{from: {_table, _}, select: nil, wheres: _wheres}) do
-    raise "Not supported by adapter"
-    # {:cache, {:delete_all, Query.match_spec(table, nil, wheres, nil)}}
-  end
+  def prepare(operation, %Ecto.Query{} = query), do: {:nocache, {operation, query}}
 
   @doc false
   # Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:cache, _fun, {:all, wheres, ordering_fn, limit}},
+                      {:nocache, {:all, %Ecto.Query{wheres: wheres, limit: limit, order_bys: order_bys}}},
                       params, preprocess, _opts) do
+    limit = limit |> get_limit()
+    ordering_fn = order_bys |> Ordering.get_ordering_fn()
     match_spec = Query.match_spec(schema, table, fields, wheres, params)
     Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
@@ -125,7 +117,8 @@ defmodule Ecto.Mnesia.Adapter do
     Table.transaction(fun)
   end
 
-  def insert_all(repo, %{source: {prefix, source}}, _header, rows, {_, _conflict_params, _} = on_conflict, returning, opts) do
+  def insert_all(repo, %{source: {prefix, source}}, _header, rows, {_, _conflict_params, _} = on_conflict,
+                 returning, opts) do
     # TODO: Insert everything in a single transaction
   end
 
@@ -136,7 +129,7 @@ defmodule Ecto.Mnesia.Adapter do
   Delete Record of Ecto Schema Instace from mnesia database.
   """
   def delete(_repo, %{schema: _schema} = arg1, _, _) do
-    IO.inspect arg1
+    # IO.inspect arg1
     # :mnesia.delete(name, key, case lock do
     #   :write  -> :write
     #   :write! -> :sticky_write
@@ -157,8 +150,11 @@ defmodule Ecto.Mnesia.Adapter do
   end
 
   @doc false
-  def dumpers(primitive, _type),    do: [primitive]
-  def loaders(primitive, _type),    do: [primitive]
+  def loaders(:binary_id, type), do: [Ecto.UUID, type]
+  def loaders(primitive, _type), do: [primitive]
+
+  def dumpers(:binary_id, type), do: [type, Ecto.UUID]
+  def dumpers(primitive, _type), do: [primitive]
 
   defp get_limit(nil), do: nil
   defp get_limit(%Ecto.Query.QueryExpr{expr: limit}), do: limit

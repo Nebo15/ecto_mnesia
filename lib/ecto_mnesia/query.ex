@@ -93,8 +93,8 @@ defmodule Ecto.Mnesia.Query do
 
   # Binded variable need to be casted to type that can be compared by Mnesia guard function
   defp condition_expression({:^, [], [index]}, _table, opts) do
-    index + 1
-    |> :lists.nth(opts)
+    opts
+    |> Enum.at(index)
     |> get_binded()
     |> Ecto.Mnesia.Schema.cast_type()
   end
