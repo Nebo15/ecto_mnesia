@@ -137,7 +137,6 @@ defmodule Ecto.Mnesia.Adapter do
     Table.transaction(fun)
   end
 
-  # TestRepo, %{autogenerate_id: {:id, :id}, context: nil, schema: SellOffer, source: {nil, "sell_offer"}}, [:age, :id, :loan_id], [[loan_id: "hello", age: 11], [loan_id: "hello", age: 15], [loan_id: "world", age: 21]], {:raise, [], []}, [], []
   def insert_all(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}},
                  _header, rows, _on_conflict, _returning, _opts) do
     table = table |> Table.get_name()
