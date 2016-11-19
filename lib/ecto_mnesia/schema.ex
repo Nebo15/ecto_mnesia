@@ -18,7 +18,6 @@ defmodule Ecto.Mnesia.Schema do
 
   def from_records(records, schema, fields, take, _preprocess_fn) do
     fields = fields
-    |> IO.inspect
     |> unzip_fields(schema)
 
     take = take

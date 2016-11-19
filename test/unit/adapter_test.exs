@@ -81,6 +81,16 @@ defmodule Ecto.Mnesia.AdapterTest do
     end
   end
 
+  test "insert all" do
+    records = [
+      [loan_id: "hello", age: 11],
+      [loan_id: "hello", age: 15],
+      [loan_id: "world", age: 21]
+    ]
+
+    assert {3, nil} == TestRepo.insert_all(SellOffer, records)
+  end
+
   describe "update" do
     setup do
       {:ok, loan} = %SellOffer{loan_id: "hello"}
@@ -167,13 +177,13 @@ defmodule Ecto.Mnesia.AdapterTest do
     end
 
     test "by query" do
-      assert {2, nil} == TestRepo.delete_all(from(so in SellOffer, where: so.age < 20))
+      assert {2, nil} == TestRepo.delete_all from(so in SellOffer, where: so.age < 20)
       assert 1 == Ecto.Mnesia.Table.count(:sell_offer)
     end
 
     test "return result" do
       # TODO: Return on delete
-      assert {2, _} = TestRepo.delete_all(from(so in SellOffer, where: so.age < 20), select: [:id, :age])
+      assert {2, _} = TestRepo.delete_all from(so in SellOffer, where: so.age < 20), select: [:id, :age]
       assert 1 == Ecto.Mnesia.Table.count(:sell_offer)
     end
 
@@ -183,51 +193,73 @@ defmodule Ecto.Mnesia.AdapterTest do
     end
   end
 
-  # describe "query limit" do
-  #   setup do
-  #     {:ok, loan} = %SellOffer{loan_id: "hello"}
-  #     |> TestRepo.insert
+  describe "query limit" do
+    setup do
+      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
+      |> TestRepo.insert
 
-  #     %{loan: loan}
-  #   end
+      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
+      |> TestRepo.insert
 
-  #   test "limits result" do
-  #     result = TestRepo.all from so in SellOffer,
-  #       limit: 1
+      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
+      |> TestRepo.insert
 
-  #     assert 1 == length(result)
-  #   end
-  # end
+      %{loan1: loan1, loan2: loan2, loan3: loan3}
+    end
 
-  # describe "order by" do
-  #   test "field" do
-  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
-  #       order_by: so.age
+    test "limits result" do
+      result = TestRepo.all from so in SellOffer,
+        limit: 1
 
-  #     assert rec1.age > rec2.age
-  #   end
+      assert 1 == length(result)
+    end
+  end
 
-  #   test "field asc" do
-  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
-  #       order_by: [asc: so.age]
+  describe "order by" do
+    setup do
+      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
+      |> TestRepo.insert
 
-  #     assert rec1.age > rec2.age
-  #   end
+      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
+      |> TestRepo.insert
 
-  #   test "field desc" do
-  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
-  #       order_by: [desc: so.age]
+      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
+      |> TestRepo.insert
 
-  #     assert rec1.age < rec2.age
-  #   end
-  # end
+      %{loan1: loan1, loan2: loan2, loan3: loan3}
+    end
 
-  # describe "delete" do
-  #   test "by id" do
-  #     # %{id: id} = TestRepo.insert(%SellOffer{loan_id: "loan-009"})
-  #     # IO.inspect id
+    test "field", %{loan1: loan1, loan2: loan2, loan3: loan3} do
+      [res1, res2, res3] = TestRepo.all from so in SellOffer,
+        order_by: so.age
 
-  #     # TestRepo.delete(SellOffer, id)
-  #   end
-  # end
+      assert res1.age < res2.age
+      assert res2.age < res3.age
+      assert loan1.id == res1.id
+      assert loan2.id == res2.id
+      assert loan3.id == res3.id
+    end
+
+    test "field asc", %{loan1: loan1, loan2: loan2, loan3: loan3} do
+      [res1, res2, res3] = TestRepo.all from so in SellOffer,
+        order_by: [asc: so.age]
+
+      assert res1.age < res2.age
+      assert res2.age < res3.age
+      assert loan1.id == res1.id
+      assert loan2.id == res2.id
+      assert loan3.id == res3.id
+    end
+
+    test "field desc", %{loan1: loan1, loan2: loan2, loan3: loan3} do
+      [res1, res2, res3] = TestRepo.all from so in SellOffer,
+        order_by: [desc: so.age]
+
+      assert res1.age > res2.age
+      assert res2.age > res3.age
+      assert loan1.id == res3.id
+      assert loan2.id == res2.id
+      assert loan3.id == res1.id
+    end
+  end
 end

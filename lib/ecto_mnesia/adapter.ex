@@ -111,7 +111,7 @@ defmodule Ecto.Mnesia.Adapter do
     end)
   end
 
-  defp return_on_delete(records, schema, nil, take, preprocess, ordering_fn), do: {length(records), nil}
+  defp return_on_delete(records, _schema, nil, _take, _preprocess, _ordering_fn), do: {length(records), nil}
   defp return_on_delete(records, schema, fields, take, preprocess, ordering_fn) do
     result = records
     |> Schema.from_records(schema, fields, take, preprocess)
@@ -129,7 +129,30 @@ defmodule Ecto.Mnesia.Adapter do
   - Process `returning`
   """
   def insert(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}}, params,
-             {_kind, _conflict_params, _} = _on_conflict, _returning, _opts) do
+             _on_conflict, _returning, _opts) do
+    do_insert(table, schema, pk_field, params)
+  end
+
+  def transaction(_repo, _opts, fun) do
+    Table.transaction(fun)
+  end
+
+  # TestRepo, %{autogenerate_id: {:id, :id}, context: nil, schema: SellOffer, source: {nil, "sell_offer"}}, [:age, :id, :loan_id], [[loan_id: "hello", age: 11], [loan_id: "hello", age: 15], [loan_id: "world", age: 21]], {:raise, [], []}, [], []
+  def insert_all(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}},
+                 _header, rows, _on_conflict, _returning, _opts) do
+    table = table |> Table.get_name()
+    count = Table.transaction(fn ->
+      rows
+      |> Enum.reduce(0, fn params, acc ->
+        do_insert(table, schema, pk_field, params)
+        acc + 1
+      end)
+    end)
+
+    {count, nil}
+  end
+
+  defp do_insert(table, schema, pk_field, params) do
     params = params
     |> Keyword.put_new(pk_field, Table.next_id(table)) # TODO: increment counter only when ID is not set
 
@@ -144,22 +167,17 @@ defmodule Ecto.Mnesia.Adapter do
     end
   end
 
-  def transaction(_repo, _opts, fun) do
-    Table.transaction(fun)
-  end
-
-  def insert_all(repo, %{source: {prefix, source}}, _header, rows, {_, _conflict_params, _} = on_conflict,
-                 returning, opts) do
-    # TODO: Insert everything in a single transaction
-  end
-
   # TODO
   # def stream()
+
+  @doc false
+  # Mnesia does not support transaction rollback
+  def rollback(_repo, _tid), do: throw "rollback/2 is not supported by the adapter"
 
   @doc """
   Deletes a record from a Mnesia database.
   """
-  def delete(_repo, %{schema: _schema, source: {_, table}, autogenerate_id: autogenerate_id} = arg1, filter, arg3) do
+  def delete(_repo, %{schema: _schema, source: {_, table}, autogenerate_id: autogenerate_id}, filter, _opts) do
     pk = get_pk!(filter, autogenerate_id)
     case Table.delete(table, pk) do
       {:ok, ^pk} -> {:ok, []}

@@ -17,7 +17,7 @@ defmodule Ecto.Mnesia.Ordering do
   end
 
   defp sort([left], [right], ordering) do
-    cmp(left, right, ordering) == :gt
+    cmp(left, right, ordering) == :lt
   end
 
   defp cmp(left, right, [%{expr: [asc: {{:., [], [{:&, [], [0]}, field]}, _,_}]} | t]) do
