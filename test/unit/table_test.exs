@@ -1,5 +1,5 @@
 defmodule Ecto.Mnesia.TableTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   require Logger
   alias Ecto.Mnesia.Table
 

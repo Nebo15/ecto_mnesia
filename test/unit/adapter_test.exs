@@ -1,318 +1,233 @@
-# defmodule Ecto.Mnesia.AdapterTest do
-#   use ExUnit.Case, async: true
-#   require Logger
-#   import Ecto.Query
+defmodule Ecto.Mnesia.AdapterTest do
+  use ExUnit.Case, async: true
+  require Logger
+  import Ecto.Query, only: [from: 2]
 
-#   @test_table :sell_offer
-#   @test_record_key 1
-#   @test_record {:sell_offer, @test_record_key, 123, "loan-007", nil, nil, 9.23, nil, true,
-#                 nil, nil, nil, 26, 1.0e3, 20, 30, "AB", nil, 100, "100", nil, nil, "ok", nil, true,
-#                 {{2016, 11, 18}, {18, 43, 8, 496985}}, {{2016, 11, 18}, {18, 43, 8, 502628}}}
-#   @test_schema %SellOffer{
-#     age: 26,
-#     loan_id: "loan-007",
-#     income: 1000.0, dpc: 20, dpd: 30, loan_risk_class: "AB",
-#     trader_id: 123, loan_duration: 100, loan_product_type: "100",
-#     max_shared_apr: Decimal.new(9.23), loan_status: "ok",
-#     loan_is_prolonged: true, guaranteed: true
-#   }
+  setup do
+    :mnesia.clear_table(:sell_offer)
+    :mnesia.clear_table(:id_seq)
+    :ok
+  end
 
-#   setup do
-#     :mnesia.clear_table(:sell_offer)
-#     :ok
-#   end
+  describe "insert" do
+    test "schema" do
+      schema = %SellOffer{
+        loan_id: "hello"
+      }
 
+      assert {:ok, res_schema} = schema
+      |> TestRepo.insert
 
-#   setup_all do
-#     TestRepo.insert(%SellOffer{
-#       age: 26,
-#       loan_id: "loan-007",
-#       income: 1000.0, dpc: 20, dpd: 30, loan_risk_class: "AB",
-#       trader_id: 123, loan_duration: 100, loan_product_type: "100",
-#       max_shared_apr: Decimal.new(9.23), loan_status: "ok",
-#       loan_is_prolonged: true, guaranteed: true
-#     })
+      assert %SellOffer{
+        id: id,
+        loan_id: "hello",
+        inserted_at: inserted_at,
+        updated_at: updated_at
+      } = res_schema
 
-#     TestRepo.insert(%SellOffer{
-#       age: 23,
-#       loan_id: "loan-008"
-#     })
+      assert id
+      assert inserted_at
+      assert updated_at
+    end
 
-#     :ok
-#   end
+    test "schema with id" do
+      schema = %SellOffer{
+        id: 2,
+        loan_id: "hello"
+      }
 
-#   describe "schema selector" do
-#     test "select all" do
-#       [rec1, rec2] = result = TestRepo.all(SellOffer)
+      assert {:ok, res_schema} = schema
+      |> TestRepo.insert
 
-#       assert 2 == length(result)
-#       assert %SellOffer{
-#         age: 26,
-#         loan_id: "loan-007",
-#         income: 1000.0,
-#         dpc: 20,
-#         dpd: 30,
-#         loan_risk_class: "AB",
-#         trader_id: 123,
-#         loan_duration: 100,
-#         loan_product_type: "100",
-#         max_shared_apr: 9.23,
-#         loan_status: "ok",
-#         loan_is_prolonged: true,
-#         guaranteed: true,
-#         min_price_rate: nil
-#       } = rec1
+      assert %SellOffer{
+        id: 2,
+        loan_id: "hello",
+        inserted_at: inserted_at,
+        updated_at: updated_at
+      } = res_schema
 
-#       assert %SellOffer{
-#         age: 23,
-#         loan_id: "loan-008",
-#         max_shared_apr: nil,
-#         min_price_rate: nil
-#       } = rec2
-#     end
-#   end
+      assert inserted_at
+      assert updated_at
+    end
 
-#   describe "query selector" do
-#     test "select all" do
-#       [rec1, rec2] = result = TestRepo.all from SellOffer
+    test "changeset" do
+      changeset = %SellOffer{}
+      |> Ecto.Changeset.change([loan_id: "hello"])
 
-#       assert 2 == length(result)
-#       assert %SellOffer{
-#         age: 26,
-#         loan_id: "loan-007",
-#         income: 1000.0,
-#         dpc: 20,
-#         dpd: 30,
-#         loan_risk_class: "AB",
-#         trader_id: 123,
-#         loan_duration: 100,
-#         loan_product_type: "100",
-#         max_shared_apr: 9.23,
-#         loan_status: "ok",
-#         loan_is_prolonged: true,
-#         guaranteed: true,
-#         min_price_rate: nil
-#       } = rec1
+      assert {:ok, schema} = changeset
+      |> TestRepo.insert
 
-#       assert %SellOffer{
-#         age: 23,
-#         loan_id: "loan-008",
-#         max_shared_apr: nil,
-#         min_price_rate: nil
-#       } = rec2
-#     end
+      assert %SellOffer{
+        id: id,
+        loan_id: "hello",
+        inserted_at: inserted_at,
+        updated_at: updated_at
+      } = schema
 
-#     test "select by fields list" do
-#       [rec1, rec2] = result = TestRepo.all from SellOffer,
-#         select: [:id, :loan_id, :max_shared_apr, :min_price_rate]
+      assert id
+      assert inserted_at
+      assert updated_at
+    end
 
-#       assert 2 == length(result)
-#       assert %SellOffer{
-#         loan_id: "loan-007",
-#         max_shared_apr: 9.23,
-#         min_price_rate: nil
-#       } = rec1
+    test "invalid changeset" do
+      changeset = %SellOffer{}
+      |> Ecto.Changeset.change([loan_id: 123])
+      |> Ecto.Changeset.validate_required([:income])
 
-#       assert %SellOffer{
-#         loan_id: "loan-008",
-#         max_shared_apr: nil,
-#         min_price_rate: nil
-#       } = rec2
-#     end
-#   end
+      assert {:error, res_changeset} = changeset
+      |> TestRepo.insert
 
-#   describe "query wheres" do
-#     # test "with binded variable" do
-#     #   binded_age = 26
+      refute [] == res_changeset.errors
+    end
+  end
 
-#     #   [result] = TestRepo.all from so in SellOffer,
-#     #     select: so,
-#     #     where: so.age == ^binded_age
+  describe "update" do
+    setup do
+      {:ok, loan} = %SellOffer{loan_id: "hello"}
+      |> TestRepo.insert
 
-#     #   assert %SellOffer{
-#     #     loan_id: "loan-007",
-#     #     max_shared_apr: 9.23,
-#     #     min_price_rate: nil
-#     #   } = result
-#     # end
+      %{loan: loan}
+    end
 
-#     test "with `>`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age > 25
+    test "changeset", %{loan: loan} do
+      changeset = loan
+      |> Ecto.Changeset.change([loan_id: "world"])
 
-#       assert %SellOffer{
-#         loan_id: "loan-007",
-#         max_shared_apr: 9.23,
-#         min_price_rate: nil
-#       } = result
-#     end
+      assert {:ok, schema} = changeset
+      |> TestRepo.update
 
-#     test "with `<`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age < 25
+      assert %SellOffer{
+        id: id,
+        loan_id: "world",
+        inserted_at: inserted_at,
+        updated_at: updated_at
+      } = schema
 
-#       assert %SellOffer{
-#         loan_id: "loan-008"
-#       } = result
-#     end
+      assert loan.id == id
+      assert inserted_at
+      assert loan.updated_at != updated_at
+      assert updated_at > loan.updated_at
+    end
 
-#     test "with `>=`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age >= 26
+    test "invalid changeset" do
+      changeset = %SellOffer{}
+      |> Ecto.Changeset.change([loan_id: 123])
+      |> Ecto.Changeset.validate_required([:income])
 
-#       assert %SellOffer{
-#         loan_id: "loan-007",
-#         max_shared_apr: 9.23,
-#         min_price_rate: nil
-#       } = result
-#     end
+      assert {:error, res_changeset} = changeset
+      |> TestRepo.insert
 
-#     test "with `<=`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age <= 23
+      refute [] == res_changeset.errors
+    end
+  end
 
-#       assert %SellOffer{
-#         loan_id: "loan-008"
-#       } = result
-#     end
+  describe "delete" do
+    setup do
+      {:ok, loan} = %SellOffer{loan_id: "hello"}
+      |> TestRepo.insert
 
-#     test "with `==`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age == 26
+      %{loan: loan}
+    end
 
-#       assert %SellOffer{
-#         loan_id: "loan-007",
-#         max_shared_apr: 9.23,
-#         min_price_rate: nil
-#       } = result
-#     end
+    test "struct", %{loan: loan} do
+      assert {:ok, %{id: loan_id}} = loan
+      |> TestRepo.delete
 
-#    test "with `!=`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age != 26
+      assert loan.id == loan_id
+    end
 
-#       assert %SellOffer{
-#         loan_id: "loan-008"
-#       } = result
-#     end
+    test "does not exist" do
+      {:ok, _} = %SellOffer{loan_id: "hello", id: 123}
+      |> TestRepo.delete
+    end
 
-#     test "with `and`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age != 26 and so.age != 21
+    test "changeset", %{loan: loan} do
+      changeset = loan
+      |> Ecto.Changeset.change([loan_id: "world"])
 
-#       assert %SellOffer{
-#         loan_id: "loan-008"
-#       } = result
-#     end
+      assert {:ok, %{id: loan_id}} = changeset
+      |> TestRepo.delete
 
-#     test "with `or`" do
-#       [rec1,rec2] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age != 26 or so.age != 21
+      assert loan.id == loan_id
+    end
+  end
 
-#       assert %SellOffer{
-#         loan_id: "loan-007"
-#       } = rec1
+  describe "delete_all" do
+    setup do
+      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
+      |> TestRepo.insert
 
-#       assert %SellOffer{
-#         loan_id: "loan-008"
-#       } = rec2
-#     end
+      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
+      |> TestRepo.insert
 
-#     test "with `not`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: not (so.age == 26)
+      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
+      |> TestRepo.insert
 
-#       assert %SellOffer{
-#         loan_id: "loan-008"
-#       } = result
-#     end
+      %{loan1: loan1, loan2: loan2, loan3: loan3}
+    end
 
-#     test "with `or`, `and` and `(..)`" do
-#       [result] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: (so.age != 26 or so.age != 21) and so.age != 23
+    test "by query" do
+      assert {2, nil} == TestRepo.delete_all(from(so in SellOffer, where: so.age < 20))
+      assert 1 == Ecto.Mnesia.Table.count(:sell_offer)
+    end
 
-#       assert %SellOffer{
-#         loan_id: "loan-007"
-#       } = result
+    test "return result" do
+      # TODO: Return on delete
+      assert {2, _} = TestRepo.delete_all(from(so in SellOffer, where: so.age < 20), select: [:id, :age])
+      assert 1 == Ecto.Mnesia.Table.count(:sell_offer)
+    end
 
-#       result = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age != 26 or (so.age != 21 and so.age != 23)
+    test "by struct" do
+      assert {3, nil} == TestRepo.delete_all(SellOffer)
+      assert 0 == Ecto.Mnesia.Table.count(:sell_offer)
+    end
+  end
 
-#       assert 2 == length(result)
-#     end
+  # describe "query limit" do
+  #   setup do
+  #     {:ok, loan} = %SellOffer{loan_id: "hello"}
+  #     |> TestRepo.insert
 
-#     test "with `in`" do
-#       [rec1, rec2] = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: so.age in [23, 26]
+  #     %{loan: loan}
+  #   end
 
-#       assert %SellOffer{
-#         loan_id: "loan-007"
-#       } = rec1
+  #   test "limits result" do
+  #     result = TestRepo.all from so in SellOffer,
+  #       limit: 1
 
-#       assert %SellOffer{
-#         loan_id: "loan-008"
-#       } = rec2
-#     end
+  #     assert 1 == length(result)
+  #   end
+  # end
 
-#     test "with `is_nil`" do
-#       result = TestRepo.all from so in SellOffer,
-#         select: so,
-#         where: is_nil(so.min_price_rate)
+  # describe "order by" do
+  #   test "field" do
+  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
+  #       order_by: so.age
 
-#       assert 2 == length(result)
-#     end
-#   end
+  #     assert rec1.age > rec2.age
+  #   end
 
-#   describe "query limit" do
-#     test "limits result" do
-#       result = TestRepo.all from so in SellOffer,
-#         limit: 1
+  #   test "field asc" do
+  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
+  #       order_by: [asc: so.age]
 
-#       assert 1 == length(result)
-#     end
-#   end
+  #     assert rec1.age > rec2.age
+  #   end
 
-#   describe "order by" do
-#     test "field" do
-#       [rec1, rec2] = TestRepo.all from so in SellOffer,
-#         order_by: so.age
+  #   test "field desc" do
+  #     [rec1, rec2] = TestRepo.all from so in SellOffer,
+  #       order_by: [desc: so.age]
 
-#       assert rec1.age > rec2.age
-#     end
+  #     assert rec1.age < rec2.age
+  #   end
+  # end
 
-#     test "field asc" do
-#       [rec1, rec2] = TestRepo.all from so in SellOffer,
-#         order_by: [asc: so.age]
+  # describe "delete" do
+  #   test "by id" do
+  #     # %{id: id} = TestRepo.insert(%SellOffer{loan_id: "loan-009"})
+  #     # IO.inspect id
 
-#       assert rec1.age > rec2.age
-#     end
-
-#     test "field desc" do
-#       [rec1, rec2] = TestRepo.all from so in SellOffer,
-#         order_by: [desc: so.age]
-
-#       assert rec1.age < rec2.age
-#     end
-#   end
-
-#   describe "delete" do
-#     test "by id" do
-#       # %{id: id} = TestRepo.insert(%SellOffer{loan_id: "loan-009"})
-#       # IO.inspect id
-
-#       # TestRepo.delete(SellOffer, id)
-#     end
-#   end
-# end
+  #     # TestRepo.delete(SellOffer, id)
+  #   end
+  # end
+end

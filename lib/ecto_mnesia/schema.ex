@@ -18,16 +18,17 @@ defmodule Ecto.Mnesia.Schema do
 
   def from_records(records, schema, fields, take, _preprocess_fn) do
     fields = fields
+    |> IO.inspect
     |> unzip_fields(schema)
 
     take = take
     |> unzip_take(fields)
 
     records
-    |> Enum.map(fn row -> from_record(schema.__struct__, List.zip([take, row])) end)
+    |> Enum.map(fn row -> unzip_record(schema.__struct__, List.zip([take, row])) end)
   end
 
-  defp from_record(row, zip) do
+  defp unzip_record(row, zip) do
     [List.foldr(zip, row, fn ({k, v}, acc) -> Map.update!(acc, k, fn _ -> v end) end)]
   end
 

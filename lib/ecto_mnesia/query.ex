@@ -38,6 +38,18 @@ defmodule Ecto.Mnesia.Query do
     match_conditions(tail, table, params, [condition | acc])
   end
 
+  # For Queries without `select` section
+  defp match_body(nil, schema) do
+    schema
+    |> Enum.map(fn field ->
+      schema
+      |> Enum.find_index(&(&1 == field))
+      |> Kernel.+(1)
+      |> Integer.to_string
+      |> (&String.to_atom("$" <> &1)).()
+    end)
+  end
+
   defp match_body([{:&, [], [0, fields, _fields_count]}], schema) do
     fields
     |> List.foldl([], fn(field, acc) ->

@@ -11,13 +11,14 @@ defmodule Ecto.Mnesia.Adapter do
 
       defmodule Sample.Model do
         require Record
-          def keys, do: [id_seq:       [:thing],
-                         topics:       [:whom,:who,:what],
-                         config:       [:key]]
 
-          def meta, do: [id_seq:       [:thing, :id],
-                         config:       [:key, :value],
-                         topics:       Model.Topics.__schema__(:fields)]
+        def keys, do: [id_seq:       [:thing],
+                       topics:       [:whom,:who,:what],
+                       config:       [:key]]
+
+        def meta, do: [id_seq:       [:thing, :id],
+                       config:       [:key, :value],
+                       topics:       Model.Topics.__schema__(:fields)]
       end
 
   where `Model.Topics` is `Ecto.Schema` object.
@@ -89,6 +90,36 @@ defmodule Ecto.Mnesia.Adapter do
     {length(result), result}
   end
 
+  # Deletes all records that match Ecto.Query
+  def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
+                      {:nocache, {:delete_all, %Ecto.Query{wheres: wheres, limit: limit, order_bys: order_bys}}},
+                      params, preprocess, _opts) do
+    limit = limit |> get_limit()
+    ordering_fn = order_bys |> Ordering.get_ordering_fn()
+    match_spec = Query.match_spec(schema, table, fields, wheres, params)
+    Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
+
+    table = table |> Table.get_name()
+    Table.transaction(fn ->
+      table
+      |> Table.select(match_spec, limit)
+      |> Enum.map(fn record ->
+        {:ok, _} = Table.delete(table, List.first(record))
+        record
+      end)
+      |> return_on_delete(schema, fields, take, preprocess, ordering_fn)
+    end)
+  end
+
+  defp return_on_delete(records, schema, nil, take, preprocess, ordering_fn), do: {length(records), nil}
+  defp return_on_delete(records, schema, fields, take, preprocess, ordering_fn) do
+    result = records
+    |> Schema.from_records(schema, fields, take, preprocess)
+    |> ordering_fn.()
+
+    {length(result), result}
+  end
+
   @doc """
   Insert Ecto Schema struct to Mnesia database.
 
@@ -126,27 +157,39 @@ defmodule Ecto.Mnesia.Adapter do
   # def stream()
 
   @doc """
-  Delete Record of Ecto Schema Instace from mnesia database.
+  Deletes a record from a Mnesia database.
   """
-  def delete(_repo, %{schema: _schema} = arg1, _, _) do
-    # IO.inspect arg1
-    # :mnesia.delete(name, key, case lock do
-    #   :write  -> :write
-    #   :write! -> :sticky_write
-    # end)
-
-    raise "Not supported by adapter"
-    # {:ok, schema}
+  def delete(_repo, %{schema: _schema, source: {_, table}, autogenerate_id: autogenerate_id} = arg1, filter, arg3) do
+    pk = get_pk!(filter, autogenerate_id)
+    case Table.delete(table, pk) do
+      {:ok, ^pk} -> {:ok, []}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """
-  Update Record of Ecto Schema Instance in  mnesia database.
+  Updates record stored in a Mnesia database.
   """
-  def update(_repo, %{schema: schema, source: {_, table}} = _meta, params, _filter, _autogen, _opts) do
-    rec = Schema.to_record(schema, params, String.to_atom table)
-    Mnesia.dirty_write(rec)
+  def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: autogenerate_id},
+             params, filter, _autogen, _opts) do
+    pk = get_pk!(filter, autogenerate_id)
 
-    {:ok, []}
+    record = schema
+    |> Schema.to_record(params, table)
+
+    case table |> Table.update(pk, record) do
+      {:ok, _record} -> {:ok, params}
+      error -> error
+    end
+  end
+
+  # Extract primary key value or raise an error
+  defp get_pk!(params, {pk_field, _pk_type}), do: get_pk!(params, pk_field)
+  defp get_pk!(params, pk_field) do
+    case Keyword.fetch(params, pk_field) do
+      :error -> raise Ecto.NoPrimaryKeyValueError
+      {:ok, pk} -> pk
+    end
   end
 
   @doc false
