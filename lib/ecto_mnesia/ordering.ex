@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Adapter.Ordering do
+defmodule Ecto.Mnesia.Ordering do
   @moduledoc """
   Since there are `order by` function in Mnesia,
   we need to generate function that will order data after fetching it from DB.
@@ -17,7 +17,6 @@ defmodule Ecto.Mnesia.Adapter.Ordering do
   end
 
   defp sort([left], [right], ordering) do
-    Logger.debug("#{inspect left}, #{inspect right}, #{inspect ordering}")
     cmp(left, right, ordering) == :gt
   end
 

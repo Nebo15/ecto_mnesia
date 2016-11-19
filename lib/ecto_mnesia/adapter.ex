@@ -30,9 +30,7 @@ defmodule Ecto.Mnesia.Adapter do
 
   require Logger
   alias :mnesia, as: Mnesia
-  alias Ecto.Mnesia.Adapter.Schema
-  alias Ecto.Mnesia.Adapter.Ordering
-  alias Ecto.Mnesia.Query
+  alias Ecto.Mnesia.{Schema, Ordering, Query, Table}
 
   @behaviour Ecto.Adapter
 
@@ -44,23 +42,19 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   This function tells Ecto that we don't support DDL transactions.
   """
-  def supports_ddl_transaction?, do: false
-  def in_transaction?(_repo), do: supports_ddl_transaction?()
+  def supports_ddl_transaction?, do: true
+  def in_transaction?(_repo), do: Mnesia.is_transaction()
 
   @doc """
   Ensure all applications necessary to run the adapter are started.
   """
-  def ensure_all_started(_repo, type) do
-    Application.ensure_all_started(@required_apps, type)
-  end
+  def ensure_all_started(_repo, type), do: Application.ensure_all_started(@required_apps, type)
 
   @doc """
   Returns the childspec that starts the adapter process.
   This method is called from `Ecto.Repo.Supervisor.init/2`.
   """
-  def child_spec(_repo, opts) do
-    Supervisor.Spec.worker(Ecto.Mnesia.Storage, [opts])
-  end
+  def child_spec(_repo, opts), do: Supervisor.Spec.worker(Ecto.Mnesia.Storage, [opts])
 
   @doc """
   Automatically generate next ID.
@@ -70,25 +64,12 @@ defmodule Ecto.Mnesia.Adapter do
   def autogenerate(:binary_id), do: Ecto.UUID.bingenerate()
 
   @doc """
-  Returns auto-incremented integer ID for table in Mnesia.
-
-  Sequence auto-generation is implemented as `mnesia:dirty_update_counter`.
-  """
-  def next_id(table, inc \\ 1) when is_atom(table), do: Mnesia.dirty_update_counter({:id_seq, table}, inc)
-
-  @doc """
-  Return directory that stores `mnesia` tables on local node.
+  Return directory that stores Mnesia tables on local node.
   """
   def path, do: Mnesia.system_info(:local_tables)
 
-  @doc """
-  Returns count of elements in Mnesia talbe.
-  """
-  def count(table) when is_atom(table), do: Mnesia.table_info(table, :size)
-
-  @doc """
-  Prepares are called by Ecto before `execute/6` methods.
-  """
+  @doc false
+  # Prepares are called by Ecto before `execute/6` methods.
   def prepare(:all, %Ecto.Query{wheres: wheres, limit: limit, order_bys: order_bys}) do
     limit = limit |> get_limit()
     ordering_fn = order_bys |> Ordering.get_ordering_fn()
@@ -100,37 +81,16 @@ defmodule Ecto.Mnesia.Adapter do
     # {:cache, {:delete_all, Query.match_spec(table, nil, wheres, nil)}}
   end
 
-  defp get_limit(nil), do: nil
-  defp get_limit(%Ecto.Query.QueryExpr{expr: limit}), do: limit
-
-  @doc """
-  Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
-  """
+  @doc false
+  # Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:cache, _fun, {:all, wheres, ordering_fn, nil}} = query,
+                      {:cache, _fun, {:all, wheres, ordering_fn, limit}},
                       params, preprocess, _opts) do
     match_spec = Query.match_spec(schema, table, fields, wheres, params)
-    Logger.debug("Executing Mnesia match_spec #{inspect match_spec} built from query #{inspect query}")
+    Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
-    table = table |> String.to_atom
-
-    result = :async_dirty
-    |> Mnesia.activity(&Mnesia.select/3, [table, match_spec, :read])
-    |> Schema.from_records(schema, fields, take, preprocess)
-    |> ordering_fn.()
-
-    {length(result), result}
-  end
-
-  def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:cache, _fun, {:all, wheres, ordering_fn, limit}} = query,
-                      params, preprocess, _opts) do
-    match_spec = Query.match_spec(schema, table, fields, wheres, params)
-    Logger.debug("Executing Mnesia match_spec #{inspect match_spec}, limit #{inspect limit} built from query #{inspect query}")
-
-    table = table |> String.to_atom
-    {result, _context} = Mnesia.activity(:async_dirty, &Mnesia.select/4, [table, match_spec, limit, :read])
-    result = result
+    result = table
+    |> Table.select(match_spec, limit)
     |> Schema.from_records(schema, fields, take, preprocess)
     |> ordering_fn.()
 
@@ -147,21 +107,25 @@ defmodule Ecto.Mnesia.Adapter do
   """
   def insert(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}}, params,
              {_kind, _conflict_params, _} = _on_conflict, _returning, _opts) do
-
-    table = String.to_atom(table)
     params = params
-    |> Keyword.put_new(pk_field, next_id(table, 1))
+    |> Keyword.put_new(pk_field, Table.next_id(table)) # TODO: increment counter only when ID is not set
 
     record = schema
     |> Schema.to_record(params, table)
 
-    case Mnesia.dirty_write(record) do
-      :ok -> {:ok, params}
-      error -> {:error, error}
+    case Table.insert(table, record) do
+      {:ok, ^record} ->
+        {:ok, params}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  def insert_all(repo, %{source: {prefix, source}}, header, rows, {_, conflict_params, _} = on_conflict, returning, opts) do
+  def transaction(_repo, _opts, fun) do
+    Table.transaction(fun)
+  end
+
+  def insert_all(repo, %{source: {prefix, source}}, _header, rows, {_, _conflict_params, _} = on_conflict, returning, opts) do
     # TODO: Insert everything in a single transaction
   end
 
@@ -192,28 +156,10 @@ defmodule Ecto.Mnesia.Adapter do
     {:ok, []}
   end
 
-  @doc """
-  Retrieve all records from the given table using `mnesia:all_keys`.
-  """
-  # def all(table) do
-  #   many(fn ->
-  #     table
-  #     |> Mnesia.all_keys()
-  #     |> Enum.map(fn
-  #       key -> Mnesia.read(table, key)
-  #     end)
-  #   end)
-  # end
-
-  # def many(fun) do
-  #   case Mnesia.activity(:async_dirty, fun) do
-  #     {:aborted, error} -> {:error, error}
-  #     {:atomic, r} -> r
-  #     x -> x
-  #   end
-  # end
-
   @doc false
   def dumpers(primitive, _type),    do: [primitive]
   def loaders(primitive, _type),    do: [primitive]
+
+  defp get_limit(nil), do: nil
+  defp get_limit(%Ecto.Query.QueryExpr{expr: limit}), do: limit
 end

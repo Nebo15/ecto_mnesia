@@ -102,19 +102,19 @@ defmodule SellOfferTest do
   end
 
   describe "query wheres" do
-    test "with binded variable" do
-      binded_age = 26
+    # test "with binded variable" do
+    #   binded_age = 26
 
-      [result] = TestRepo.all from so in SellOffer,
-        select: so,
-        where: so.age == ^binded_age
+    #   [result] = TestRepo.all from so in SellOffer,
+    #     select: so,
+    #     where: so.age == ^binded_age
 
-      assert %SellOffer{
-        loan_id: "loan-007",
-        max_shared_apr: 9.23,
-        min_price_rate: nil
-      } = result
-    end
+    #   assert %SellOffer{
+    #     loan_id: "loan-007",
+    #     max_shared_apr: 9.23,
+    #     min_price_rate: nil
+    #   } = result
+    # end
 
     test "with `>`" do
       [result] = TestRepo.all from so in SellOffer,
@@ -287,5 +287,12 @@ defmodule SellOfferTest do
     end
   end
 
+  describe "delete" do
+    test "by id" do
+      # %{id: id} = TestRepo.insert(%SellOffer{loan_id: "loan-009"})
+      # IO.inspect id
 
+      # TestRepo.delete(SellOffer, id)
+    end
+  end
 end

@@ -1,8 +1,9 @@
-defmodule Ecto.Mnesia.Adapter.Schema do
+defmodule Ecto.Mnesia.Schema do
   @doc """
   Convert Ecto Schema struct to tuple that can be inserted to Mnesia.
   """
   def to_record(schema, params, table) do
+    table = table |> Ecto.Mnesia.Table.get_name()
     fields = schema.__schema__(:fields)
     nilled_tuple = List.to_tuple([table | List.duplicate(nil, length(fields))])
     params
@@ -43,8 +44,11 @@ defmodule Ecto.Mnesia.Adapter.Schema do
   @doc """
   Cast types to compatible in Mensia.
   """
-  def cast_type(%Decimal{coef: x, exp: y, sign: z}) do
-    x * :math.pow(10, y)
+  def cast_type(%Decimal{coef: x, exp: y, sign: z}) do # TODO: Improve this cast and move to dumpers/loaders in `extensions/`
+    case z do
+      1 -> x * :math.pow(10, y)
+      0 -> x * :math.pow(10, y) * -1
+    end
   end
   def cast_type(x), do: x
 end
