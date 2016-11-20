@@ -1,5 +1,5 @@
 defmodule Ecto.Mnesia.AdapterTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   require Logger
   import Ecto.Query, only: [from: 2]
 
@@ -128,6 +128,49 @@ defmodule Ecto.Mnesia.AdapterTest do
       |> TestRepo.insert
 
       refute [] == res_changeset.errors
+    end
+  end
+
+  describe "update_all" do
+    setup do
+      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
+      |> TestRepo.insert
+
+      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
+      |> TestRepo.insert
+
+      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
+      |> TestRepo.insert
+
+      %{loan1: loan1, loan2: loan2, loan3: loan3}
+    end
+
+    test "by query" do
+      query = from so in SellOffer, update: [set: [status: "updated", guaranteed: true], inc: [age: 1]]
+
+      assert {3, nil} == query |> TestRepo.update_all([])
+      assert 3 == Ecto.Mnesia.Table.count(:sell_offer)
+      assert [
+        %SellOffer{status: "updated", guaranteed: true, age: age1},
+        %SellOffer{status: "updated", guaranteed: true, age: age2},
+        %SellOffer{status: "updated", guaranteed: true, age: age3}] = TestRepo.all(SellOffer)
+
+      assert age1 in [12, 16, 22]
+      assert age2 in [12, 16, 22]
+      assert age3 in [12, 16, 22]
+    end
+
+    test "by struct" do
+      assert {3, nil} == TestRepo.update_all SellOffer, set: [status: "updated", guaranteed: true], inc: [age: 1]
+      assert 3 == Ecto.Mnesia.Table.count(:sell_offer)
+      assert [
+        %SellOffer{status: "updated", guaranteed: true, age: age1},
+        %SellOffer{status: "updated", guaranteed: true, age: age2},
+        %SellOffer{status: "updated", guaranteed: true, age: age3}] = TestRepo.all(SellOffer)
+
+      assert age1 in [12, 16, 22]
+      assert age2 in [12, 16, 22]
+      assert age3 in [12, 16, 22]
     end
   end
 

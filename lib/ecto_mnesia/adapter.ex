@@ -30,7 +30,7 @@ defmodule Ecto.Mnesia.Adapter do
   """
   require Logger
   alias :mnesia, as: Mnesia
-  alias Ecto.Mnesia.{Schema, Ordering, Query, Table}
+  alias Ecto.Mnesia.{Schema, Ordering, Query, Table, Update}
 
   @behaviour Ecto.Adapter
 
@@ -107,12 +107,41 @@ defmodule Ecto.Mnesia.Adapter do
         {:ok, _} = Table.delete(table, List.first(record))
         record
       end)
-      |> return_on_delete(schema, fields, take, preprocess, ordering_fn)
+      |> return_all(schema, fields, take, preprocess, ordering_fn)
     end)
   end
 
-  defp return_on_delete(records, _schema, nil, _take, _preprocess, _ordering_fn), do: {length(records), nil}
-  defp return_on_delete(records, schema, fields, take, preprocess, ordering_fn) do
+  # Update all records
+  def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
+                      {:nocache, {:update_all,
+                      %Ecto.Query{wheres: wheres, limit: limit, order_bys: order_bys, updates: updates} = q}},
+                      params, preprocess, _opts) do
+    # IO.inspect q, structs: false
+
+    limit = limit |> get_limit()
+    ordering_fn = order_bys |> Ordering.get_ordering_fn()
+    match_spec = Query.match_spec(schema, table, fields, wheres, params)
+    Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
+
+    table = table |> Table.get_name()
+    Table.transaction(fn ->
+      table
+      |> Table.select(match_spec, limit)
+      |> Enum.map(fn record ->
+        update = record
+        |> Query.Update.update_record(table, updates, params)
+        |> List.insert_at(0, table)
+        |> List.to_tuple()
+
+        {:ok, result} = Table.update(table, List.first(record), update)
+        result
+      end)
+      |> return_all(schema, fields, take, preprocess, ordering_fn)
+    end)
+  end
+
+  defp return_all(records, _schema, nil, _take, _preprocess, _ordering_fn), do: {length(records), nil}
+  defp return_all(records, schema, fields, take, preprocess, ordering_fn) do
     result = records
     |> Schema.from_records(schema, fields, take, preprocess)
     |> ordering_fn.()
@@ -131,10 +160,6 @@ defmodule Ecto.Mnesia.Adapter do
   def insert(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}}, params,
              _on_conflict, _returning, _opts) do
     do_insert(table, schema, pk_field, params)
-  end
-
-  def transaction(_repo, _opts, fun) do
-    Table.transaction(fun)
   end
 
   def insert_all(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}},
@@ -168,6 +193,10 @@ defmodule Ecto.Mnesia.Adapter do
 
   # TODO
   # def stream()
+
+  def transaction(_repo, _opts, fun) do
+    Table.transaction(fun)
+  end
 
   @doc false
   # Mnesia does not support transaction rollback

@@ -130,6 +130,7 @@ defmodule Ecto.Mnesia.Table do
         x -> x
       end
     catch
+      :exit, {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
       :exit, {:aborted, reason} -> {:error, reason}
       :exit, reason -> {:error, reason}
     end

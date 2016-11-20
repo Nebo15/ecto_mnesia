@@ -7,6 +7,7 @@ defmodule Ecto.Mnesia.Query do
     - [Match Specification](http://erlang.org/doc/apps/erts/match_spec.html)
   """
   require Logger
+  alias Ecto.Mnesia.Table
 
   def match_spec(%Ecto.SubQuery{}, _opts),
     do: raise Ecto.Query.CompileError, "Subqueries is not supported by Mnesia adapter."
@@ -14,12 +15,11 @@ defmodule Ecto.Mnesia.Query do
     when is_list(havings) and length(havings) > 0,
     do: raise Ecto.Query.CompileError, "Havings is not supported by Mnesia adapter."
 
-  def match_spec(%Ecto.Query{from: {table, _schema}, wheres: wheres, select: select}, opts) do
-    schema = table |> String.to_atom |> :mnesia.table_info(:attributes)
+  def match_spec(%Ecto.Query{from: {table, _schema}, wheres: wheres, select: _select}, opts) do
     [{match_head(table), match_conditions(wheres, table, opts, []), [:"$_"]}]
   end
   def match_spec(_schema, table, fields, wheres, opts) do
-    schema = table |> String.to_atom |> :mnesia.table_info(:attributes)
+    schema = table |> Table.get_name() |> :mnesia.table_info(:attributes)
     [{match_head(table), match_conditions(wheres, table, opts, []), [match_body(fields, schema)]}]
   end
 
@@ -99,7 +99,7 @@ defmodule Ecto.Mnesia.Query do
   end
 
   # Fields
-  defp condition_expression({{:., [], [{:&, [], [0]}, name]}, _, []}, table, _opts) do
+  def condition_expression({{:., [], [{:&, [], [0]}, name]}, _, []}, table, _opts) do
     dict = placeholders(table)
     case List.keyfind(dict, name, 0) do
       {_name, value} -> value
@@ -108,7 +108,7 @@ defmodule Ecto.Mnesia.Query do
   end
 
   # Binded variable need to be casted to type that can be compared by Mnesia guard function
-  defp condition_expression({:^, [], [index]}, _table, opts) do #when is_list(opts) do
+  def condition_expression({:^, [], [index]}, _table, opts) when is_list(opts) do
     opts
     |> Enum.at(index)
     |> get_binded()
@@ -116,16 +116,16 @@ defmodule Ecto.Mnesia.Query do
   end
 
   # Recursively expand ecto query expressions and build conditions
-  defp condition_expression({op, [], [left, right]}, table, opts) do
+  def condition_expression({op, [], [left, right]}, table, opts) do
     {guard_function_operation(op), condition_expression(left, table, opts), condition_expression(right, table, opts)}
   end
 
   # Another part of this function is to use binded variables values
-  defp condition_expression(%Ecto.Query.Tagged{value: value}, _table, _opts) do
+  def condition_expression(%Ecto.Query.Tagged{value: value}, _table, _opts) do
     value
   end
 
-  defp condition_expression(raw_value, _table, _opts) do
+  def condition_expression(raw_value, _table, _opts) do
     raw_value
   end
 
@@ -133,11 +133,8 @@ defmodule Ecto.Mnesia.Query do
   defp get_binded({value, {_, _}}), do: value
   defp get_binded(value), do: value
 
-  defp placeholders(table) do
-    fields =
-      table |>
-      String.to_atom |>
-      :mnesia.table_info(:attributes)
+  def placeholders(table) do
+    fields = table |> Table.get_name() |> :mnesia.table_info(:attributes)
 
     placeholders =
       1..length(fields)
@@ -148,9 +145,7 @@ defmodule Ecto.Mnesia.Query do
     |> Enum.zip(placeholders)
   end
 
-  @doc """
-  Convert Ecto.Query operations to MatchSpec analogs. (Only ones that doesn't match.)
-  """
+  # Convert Ecto.Query operations to MatchSpec analogs. (Only ones that doesn't match.)
   defp guard_function_operation(:!=), do: :'/='
   defp guard_function_operation(:<=), do: :'=<'
   defp guard_function_operation(op), do: op

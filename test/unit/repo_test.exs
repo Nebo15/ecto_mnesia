@@ -2,7 +2,17 @@ defmodule Ecto.RepoTest do
   use ExUnit.Case, async: true
 
   import Ecto.Query
-  # import Ecto, only: [put_meta: 2]
+  import Ecto, only: [put_meta: 2]
+
+  setup do
+    :mnesia.clear_table(:sell_offer)
+    :mnesia.clear_table(:id_seq)
+
+    {:ok, loan} = %SellOffer{loan_id: "repo_loan"}
+    |> TestRepo.insert
+
+    %{loan: loan}
+  end
 
   test "needs schema with primary key field" do
     schema = %MySchemaNoPK{x: "abc"}
@@ -16,28 +26,30 @@ defmodule Ecto.RepoTest do
     end
   end
 
-  # test "works with unknown schema" do
-  #   TestRepo.get(MySchema, 123) # TODO: MySchema does not exist
-  # end
-
-  test "works with primary key value" do
-    TestRepo.get(SellOffer, 11111)
-    TestRepo.get(SellOffer, 123)
-    TestRepo.get_by(SellOffer, loan_id: "abc")
-
-    # schema = %SellOffer{id: 1, loan_id: "abc"}
-    # TestRepo.update!(schema |> Ecto.Changeset.change(), force: true)
-    # TestRepo.delete!(schema)
+  test "works with unknown schema" do
+    assert nil == TestRepo.get(MySchema, 123) # TODO: MySchema does not exist
   end
 
-  # test "works with custom source schema" do
-  #   schema = %SellOffer{id: 1, loan_id: "abc"} |> put_meta(source: "custom_schema")
-  #   TestRepo.update!(schema |> Ecto.Changeset.change, force: true)
-  #   TestRepo.delete!(schema)
+  test "works with primary key value", %{loan: loan} do
+    assert nil == TestRepo.get(SellOffer, 11111)
+    assert %SellOffer{} = TestRepo.get(SellOffer, loan.id)
+    assert %SellOffer{} = TestRepo.get_by(SellOffer, loan_id: loan.loan_id)
 
-  #   to_insert = %SellOffer{loan_id: "abc"} |> put_meta(source: "custom_schema")
-  #   TestRepo.insert!(to_insert)
-  # end
+    schema = %SellOffer{id: 1, loan_id: "abc"}
+    assert %SellOffer{} = TestRepo.update!(schema |> Ecto.Changeset.change(), force: true)
+    assert %SellOffer{__meta__: %{state: :deleted}} =  TestRepo.delete!(schema)
+  end
+
+  test "works with custom source schema" do
+    assert_raise RuntimeError, "Schema :custom_schema does not exist", fn ->
+      schema = %SellOffer{id: 1, loan_id: "abc"} |> put_meta(source: "custom_schema")
+      TestRepo.update!(schema |> Ecto.Changeset.change, force: true)
+      TestRepo.delete!(schema)
+
+      to_insert = %SellOffer{loan_id: "abc"} |> put_meta(source: "custom_schema")
+      TestRepo.insert!(to_insert)
+    end
+  end
 
   test "fails without primary key value" do
     schema = %SellOffer{loan_id: "abc"}
