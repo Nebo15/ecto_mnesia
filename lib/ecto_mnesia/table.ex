@@ -137,6 +137,55 @@ defmodule Ecto.Mnesia.Table do
   end
 
   @doc """
+  Get the first key in the table, see `mnesia:first`.
+  """
+  @spec first(atom) :: any | nil | no_return
+  def first(table) do
+    table = table |> get_name()
+    case Mnesia.first(table) do
+      :'$end_of_table' -> nil
+      value -> value
+    end
+  end
+
+  @doc """
+  Get the next key in the table starting from the given key, see `mnesia:next`.
+  """
+  @spec next(atom, any) :: any | nil | no_return
+  def next(table, key) do
+    table = table |> get_name()
+    case Mnesia.next(table, key) do
+      :'$end_of_table' -> nil
+      value -> value
+    end
+  end
+
+  @doc """
+  Get the previous key in the table starting from the given key, see
+  `mnesia:prev`.
+  """
+  @spec prev(atom, any) :: any | nil | no_return
+  def prev(table, key) do
+    table = table |> get_name()
+    case Mnesia.prev(table, key) do
+      :'$end_of_table' -> nil
+      value -> value
+    end
+  end
+
+  @doc """
+  Get the last key in the table, see `mnesia:last`.
+  """
+  @spec last(atom) :: any | nil | no_return
+  def last(table) do
+    table = table |> get_name()
+    case Mnesia.last(table) do
+      :'$end_of_table' -> nil
+      value -> value
+    end
+  end
+
+  @doc """
   Get Mnesia table name by binary or atom representation.
   """
   def get_name(table) when is_atom(table), do: table

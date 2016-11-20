@@ -41,8 +41,10 @@ defmodule Ecto.Mnesia.Query.Update do
     |> List.update_at(index, &(&1 + value))
   end
 
-  defp apply_condition(_record, _table, {:push, _}, _params), do: throw ":push updates is not supported by the adapter"
-  defp apply_condition(_record, _table, {:pull, _}, _params), do: throw ":pull updates is not supported by the adapter"
+  defp apply_condition(_record, _table, {:push, _}, _params),
+    do: raise ArgumentError, ":push updates is not supported by the adapter"
+  defp apply_condition(_record, _table, {:pull, _}, _params),
+    do: raise ArgumentError, ":pull updates is not supported by the adapter"
 
   defp get_field_index!(table, field) do
     index = table
@@ -51,7 +53,7 @@ defmodule Ecto.Mnesia.Query.Update do
     |> Enum.find_index(&(field == &1))
 
     case index do
-      nil -> throw "Field `#{field}` does not exist in table `#{table}`"
+      nil -> raise ArgumentError, "Field `#{field}` does not exist in table `#{table}`"
       i -> i
     end
   end

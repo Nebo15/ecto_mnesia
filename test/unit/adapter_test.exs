@@ -258,6 +258,12 @@ defmodule Ecto.Mnesia.AdapterTest do
     end
   end
 
+  test "stream is not supported" do
+    assert_raise ArgumentError,
+                "stream/6 is not supported by adapter, use Ecto.Mnesia.Table.Stream.new/2 instead",
+                fn -> TestRepo.stream SellOffer end
+  end
+
   describe "order by" do
     setup do
       {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}

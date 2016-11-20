@@ -100,26 +100,26 @@ defmodule Ecto.RepoTest do
     end
   end
 
-  # test "validates update_all" do
-  #   # Success
-  #   TestRepo.update_all(SellOffer, set: [loan_id: "321"])
+  test "validates update_all" do
+    # Success
+    TestRepo.update_all(SellOffer, set: [loan_id: "321"])
 
-  #   query = from(e in SellOffer, where: e.x == "123", update: [set: [loan_id: "321"]])
-  #   TestRepo.update_all(query, [])
+    query = from(e in SellOffer, where: e.status == "123", update: [set: [loan_id: "321"]])
+    TestRepo.update_all(query, [])
 
-  #   # Failures
-  #   assert_raise ArgumentError, ~r/:returning expects at least one field to be given/, fn ->
-  #     TestRepo.update_all SellOffer, [set: [loan_id: "321"]], returning: []
-  #   end
+    # Failures
+    assert_raise ArgumentError, ~r/:returning expects at least one field to be given/, fn ->
+      TestRepo.update_all SellOffer, [set: [loan_id: "321"]], returning: []
+    end
 
-  #   assert_raise Ecto.QueryError, fn ->
-  #     TestRepo.update_all from(e in SellOffer, select: e), set: [loan_id: "321"]
-  #   end
+    assert_raise Ecto.QueryError, fn ->
+      TestRepo.update_all from(e in SellOffer, select: e), set: [loan_id: "321"]
+    end
 
-  #   assert_raise Ecto.QueryError, fn ->
-  #     TestRepo.update_all from(e in SellOffer, order_bstatus: e.x), set: [loan_id: "321"]
-  #   end
-  # end
+    assert_raise Ecto.QueryError, fn ->
+      TestRepo.update_all from(e in SellOffer, order_by: e.status), set: [loan_id: "321"]
+    end
+  end
 
   test "validates delete_all" do
     # Success
@@ -268,49 +268,49 @@ defmodule Ecto.RepoTest do
   #       end)
   # end
 
-  describe "changeset constraints" do
-    # test "are mapped to repo constraint violations" do
-    #   my_schema = %SellOffer{id: 1}
-    #   changeset =
-    #     put_in(my_schema.__meta__.context, {:invalid, [unique: "custom_loan_id_index"]})
-    #     |> Ecto.Changeset.change(loan_id: "foo")
-    #     |> Ecto.Changeset.unique_constraint(:loan_id, name: "custom_foo_index")
-    #   assert {:error, changeset} = TestRepo.insert(changeset)
-    #   refute changeset.valid?
-    # end
+  # describe "changeset constraints" do
+  #   test "are mapped to repo constraint violations" do
+  #     my_schema = %SellOffer{id: 1}
+  #     changeset =
+  #       put_in(my_schema.__meta__.context, {:invalid, [unique: "custom_loan_id_index"]})
+  #       |> Ecto.Changeset.change(loan_id: "foo")
+  #       |> Ecto.Changeset.unique_constraint(:loan_id, name: "custom_foo_index")
+  #     assert {:error, changeset} = TestRepo.insert(changeset)
+  #     refute changeset.valid?
+  #   end
 
-    # test "are mapped to repo constraint violation using suffix match" do
-    #   my_schema = %SellOffer{id: 1}
-    #   changeset =
-    #     put_in(my_schema.__meta__.context, {:invalid, [unique: "foo_table_custom_foo_index"]})
-    #     |> Ecto.Changeset.change(loan_id: "foo")
-    #     |> Ecto.Changeset.unique_constraint(:foo, name: "custom_foo_index", match: :suffix)
-    #   assert {:error, changeset} = TestRepo.insert(changeset)
-    #   refute changeset.valid?
-    # end
+  #   test "are mapped to repo constraint violation using suffix match" do
+  #     my_schema = %SellOffer{id: 1}
+  #     changeset =
+  #       put_in(my_schema.__meta__.context, {:invalid, [unique: "foo_table_custom_foo_index"]})
+  #       |> Ecto.Changeset.change(loan_id: "foo")
+  #       |> Ecto.Changeset.unique_constraint(:foo, name: "custom_foo_index", match: :suffix)
+  #     assert {:error, changeset} = TestRepo.insert(changeset)
+  #     refute changeset.valid?
+  #   end
 
-    # test "may fail to map to repo constraint violation on name" do
-    #   my_schema = %SellOffer{id: 1}
-    #   changeset =
-    #     put_in(my_schema.__meta__.context, {:invalid, [unique: "foo_table_custom_foo_index"]})
-    #     |> Ecto.Changeset.change(loan_id: "foo")
-    #     |> Ecto.Changeset.unique_constraint(:foo, name: "custom_foo_index")
-    #   assert_raise Ecto.ConstraintError, fn ->
-    #     TestRepo.insert(changeset)
-    #   end
-    # end
+  #   test "may fail to map to repo constraint violation on name" do
+  #     my_schema = %SellOffer{id: 1}
+  #     changeset =
+  #       put_in(my_schema.__meta__.context, {:invalid, [unique: "foo_table_custom_foo_index"]})
+  #       |> Ecto.Changeset.change(loan_id: "foo")
+  #       |> Ecto.Changeset.unique_constraint(:foo, name: "custom_foo_index")
+  #     assert_raise Ecto.ConstraintError, fn ->
+  #       TestRepo.insert(changeset)
+  #     end
+  #   end
 
-    # test "may fail to map to repo constraint violation on index type" do
-    #   my_schema = %SellOffer{id: 1}
-    #   changeset =
-    #     put_in(my_schema.__meta__.context, {:invalid, [invalid_constraint_type: "my_schema_foo_index"]})
-    #     |> Ecto.Changeset.change(loan_id: "foo")
-    #     |> Ecto.Changeset.unique_constraint(:foo)
-    #   assert_raise Ecto.ConstraintError, fn ->
-    #     TestRepo.insert(changeset)
-    #   end
-    # end
-  end
+  #   test "may fail to map to repo constraint violation on index type" do
+  #     my_schema = %SellOffer{id: 1}
+  #     changeset =
+  #       put_in(my_schema.__meta__.context, {:invalid, [invalid_constraint_type: "my_schema_foo_index"]})
+  #       |> Ecto.Changeset.change(loan_id: "foo")
+  #       |> Ecto.Changeset.unique_constraint(:foo)
+  #     assert_raise Ecto.ConstraintError, fn ->
+  #       TestRepo.insert(changeset)
+  #     end
+  #   end
+  # end
 
   describe "on conflict" do
     test "raises on unknown on_conflict value" do

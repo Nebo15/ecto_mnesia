@@ -103,6 +103,19 @@ defmodule Ecto.Mnesia.TableTest do
     end
   end
 
+  describe "stream" do
+    test "with Enum" do
+      Table.insert(@test_table, @test_record)
+      res = Table.transaction(fn ->
+        :sell_offer
+        |> Table.Stream.new()
+        |> Enum.reduce([], fn so, acc -> [so] ++ acc end)
+      end)
+
+      assert 1 == length(res)
+    end
+  end
+
   test "count" do
     assert 0 == Table.count(@test_table)
     Table.insert(@test_table, @test_record)

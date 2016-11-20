@@ -30,7 +30,7 @@ defmodule Ecto.Mnesia.Adapter do
   """
   require Logger
   alias :mnesia, as: Mnesia
-  alias Ecto.Mnesia.{Schema, Ordering, Query, Table, Update}
+  alias Ecto.Mnesia.{Schema, Ordering, Query, Table}
 
   @behaviour Ecto.Adapter
 
@@ -114,10 +114,8 @@ defmodule Ecto.Mnesia.Adapter do
   # Update all records
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
                       {:nocache, {:update_all,
-                      %Ecto.Query{wheres: wheres, limit: limit, order_bys: order_bys, updates: updates} = q}},
+                      %Ecto.Query{wheres: wheres, limit: limit, order_bys: order_bys, updates: updates}}},
                       params, preprocess, _opts) do
-    # IO.inspect q, structs: false
-
     limit = limit |> get_limit()
     ordering_fn = order_bys |> Ordering.get_ordering_fn()
     match_spec = Query.match_spec(schema, table, fields, wheres, params)
@@ -191,8 +189,8 @@ defmodule Ecto.Mnesia.Adapter do
     end
   end
 
-  # TODO
-  # def stream()
+  def stream(_, _, _, _, _, _),
+    do: raise ArgumentError, "stream/6 is not supported by adapter, use Ecto.Mnesia.Table.Stream.new/2 instead"
 
   def transaction(_repo, _opts, fun) do
     Table.transaction(fun)
@@ -200,7 +198,8 @@ defmodule Ecto.Mnesia.Adapter do
 
   @doc false
   # Mnesia does not support transaction rollback
-  def rollback(_repo, _tid), do: throw "rollback/2 is not supported by the adapter"
+  def rollback(_repo, _tid),
+    do: raise ArgumentError, "rollback/2 is not supported by the adapter"
 
   @doc """
   Deletes a record from a Mnesia database.
