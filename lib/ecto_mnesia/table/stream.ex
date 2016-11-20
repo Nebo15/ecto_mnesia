@@ -1,4 +1,7 @@
 defmodule Ecto.Mnesia.Table.Stream do
+  @moduledoc """
+  Stream implementation for Mnesia table.
+  """
   alias __MODULE__, as: Stream
   alias Ecto.Mnesia.Table
 
@@ -44,11 +47,11 @@ defmodule Ecto.Mnesia.Table.Stream do
   end
 
   defp reduce(stream, key, {:suspend, acc}, fun) do
-    { :suspended, acc, &reduce(stream, key, &1, fun) }
+    {:suspended, acc, &reduce(stream, key, &1, fun)}
   end
 
   defp reduce(_stream, nil, {:cont, acc}, _fun) do
-    { :done, acc }
+    {:done, acc}
   end
 
   defp reduce(stream, key, {:cont, acc}, fun) do
