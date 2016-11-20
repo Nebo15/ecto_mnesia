@@ -130,7 +130,8 @@ defmodule Ecto.Mnesia.Table do
         x -> x
       end
     catch
-      :exit, resp -> {:error, resp}
+      :exit, {:aborted, reason} -> {:error, reason}
+      :exit, reason -> {:error, reason}
     end
   end
 

@@ -32,11 +32,15 @@ defmodule Ecto.Mnesia.Query do
   end
 
   defp match_conditions([], _table, _opts, acc), do: acc
-  defp match_conditions([%{expr: expr, params: params} | tail], table, _opts, acc) do
+  defp match_conditions([%{expr: expr, params: params} | tail], table, opts, acc) do
     # Resolve params
-    condition = match_condition(expr, table, params)
+    condition = match_condition(expr, table, merge_bindings(params, opts))
     match_conditions(tail, table, params, [condition | acc])
   end
+
+  defp merge_bindings(opts1, opts2) when is_list(opts1) and is_list(opts2), do: opts1 ++ opts2
+  defp merge_bindings(nil, opts2), do: opts2
+  defp merge_bindings(opts1, nil), do: opts1
 
   # For Queries without `select` section
   defp match_body(nil, schema) do
@@ -104,16 +108,12 @@ defmodule Ecto.Mnesia.Query do
   end
 
   # Binded variable need to be casted to type that can be compared by Mnesia guard function
-  defp condition_expression({:^, [], [index]}, _table, opts) do
+  defp condition_expression({:^, [], [index]}, _table, opts) do #when is_list(opts) do
     opts
     |> Enum.at(index)
     |> get_binded()
     |> Ecto.Mnesia.Schema.cast_type()
   end
-
-  # Binded variable value
-  defp get_binded({value, {_, _}}), do: value
-  defp get_binded(value), do: value
 
   # Recursively expand ecto query expressions and build conditions
   defp condition_expression({op, [], [left, right]}, table, opts) do
@@ -128,6 +128,10 @@ defmodule Ecto.Mnesia.Query do
   defp condition_expression(raw_value, _table, _opts) do
     raw_value
   end
+
+  # Binded variable value
+  defp get_binded({value, {_, _}}), do: value
+  defp get_binded(value), do: value
 
   defp placeholders(table) do
     fields =
