@@ -1,4 +1,6 @@
-# Ecto.Mnesia
+# ecto_mnesia
+
+[![Deps Status](https://beta.hexfaktor.org/badge/all/github/Nebo15/ecto_mnesia.svg)](https://beta.hexfaktor.org/github/Nebo15/ecto_mnesia) [![Hex.pm Downloads](https://img.shields.io/hexpm/dw/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![Latest Version](https://img.shields.io/hexpm/v/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![License](https://img.shields.io/hexpm/l/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![Build Status](https://travis-ci.org/Nebo15/ecto_mnesia.svg?branch=master)](https://travis-ci.org/Nebo15/ecto_mnesia) [![Coverage Status](https://coveralls.io/repos/github/Nebo15/ecto_mnesia/badge.svg?branch=master)](https://coveralls.io/github/Nebo15/ecto_mnesia?branch=master) [![Ebert](https://ebertapp.io/github/Nebo15/ecto_mnesia.svg)](https://ebertapp.io/github/Nebo15/ecto_mnesia)
 
 Ecto.Adapter for `mnesia` Erlang term database.
 
