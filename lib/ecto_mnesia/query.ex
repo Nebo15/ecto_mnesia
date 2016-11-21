@@ -7,143 +7,105 @@ defmodule Ecto.Mnesia.Query do
     - [Match Specification](http://erlang.org/doc/apps/erts/match_spec.html)
   """
   require Logger
-  alias Ecto.Mnesia.Table
+  alias Ecto.Mnesia.Query.Context
 
-  def match_spec(%Ecto.SubQuery{}, _opts),
+  def match_spec(%Ecto.SubQuery{}, _context, _bindings),
     do: raise Ecto.Query.CompileError, "Subqueries is not supported by Mnesia adapter."
-  def match_spec(%Ecto.Query{havings: havings}, _opts)
-    when is_list(havings) and length(havings) > 0,
+  def match_spec(%Ecto.Query{havings: havings}, _context, _bindings) when is_list(havings) and length(havings) > 0,
     do: raise Ecto.Query.CompileError, "Havings is not supported by Mnesia adapter."
-
-  def match_spec(%Ecto.Query{from: {table, _schema}, wheres: wheres, select: _select}, opts) do
-    [{match_head(table), match_conditions(wheres, table, opts, []), [:"$_"]}]
-  end
-  def match_spec(_schema, table, fields, wheres, opts) do
-    schema = table |> Table.get_name() |> :mnesia.table_info(:attributes)
-    [{match_head(table), match_conditions(wheres, table, opts, []), [match_body(fields, schema)]}]
+  def match_spec(%Ecto.Query{} = query, %Context{} = context, bindings) do
+    [{match_head(context), match_conditions(query, bindings, context), [match_body(context)]}]
   end
 
-  defp match_head(table) do
-    table
-    |> placeholders
-    |> Dict.values
-    |> Enum.into([String.to_atom(table)])
-    |> List.to_tuple
+  # Build match_spec head part (data placeholders)
+  defp match_head(%Context{table: table} = context) do
+    context
+    |> Context.get_placeholders()
+    |> Enum.into([table])
+    |> List.to_tuple()
   end
 
-  defp match_conditions([], _table, _opts, acc), do: acc
-  defp match_conditions([%{expr: expr, params: params} | tail], table, opts, acc) do
-    # Resolve params
-    condition = match_condition(expr, table, merge_bindings(params, opts))
-    match_conditions(tail, table, params, [condition | acc])
+  # Build match_spec body part (query conditions)
+  defp match_body(%Context{select: select} = context) do
+    select
+    |> Enum.map(&Context.find_placeholder!(&1, context))
   end
 
-  defp merge_bindings(opts1, opts2) when is_list(opts1) and is_list(opts2), do: opts1 ++ opts2
-  defp merge_bindings(nil, opts2), do: opts2
-  defp merge_bindings(opts1, nil), do: opts1
-
-  # For Queries without `select` section
-  defp match_body(nil, schema) do
-    schema
-    |> Enum.map(fn field ->
-      schema
-      |> Enum.find_index(&(&1 == field))
-      |> Kernel.+(1)
-      |> Integer.to_string
-      |> (&String.to_atom("$" <> &1)).()
-    end)
+  # Resolve params
+  defp match_conditions(%Ecto.Query{wheres: wheres}, bindings, context),
+    do: match_conditions(wheres, bindings, context, [])
+  defp match_conditions([], _bindings, _context, acc),
+    do: acc
+  defp match_conditions([%{expr: expr, params: params} | tail], bindings, context, acc) do
+    condition = match_condition(expr, merge_bindings(params, bindings), context)
+    match_conditions(tail, bindings, context, [condition | acc])
   end
 
-  defp match_body([{:&, [], [0, fields, _fields_count]}], schema) do
-    fields
-    |> List.foldl([], fn(field, acc) ->
-      pos = schema
-        |> Enum.find_index(&(&1 == field))
-        |> Kernel.+(1)
-        |> Integer.to_string
-        |> (&String.to_atom("$" <> &1)).()
-
-      acc ++ [pos]
-    end)
-  end
+  # `expr.params` seems to be always empty, but we need to deal with cases when it's not
+  defp merge_bindings(bindings1, bindings2) when is_list(bindings1) and is_list(bindings2), do: bindings1 ++ bindings2
+  defp merge_bindings(nil, bindings), do: bindings
+  defp merge_bindings(bindings, nil), do: bindings
 
   # `is_nil` is a special case when we need to :== with nil value
-  defp match_condition({:is_nil, [], [field]}, table, opts) do
-    {:==, condition_expression(field, table, opts), nil}
+  defp match_condition({:is_nil, [], [field]}, bindings, context) do
+    {:==, condition_expression(field, bindings, context), nil}
   end
 
   # `:in` is a special case when we need to expand it to multiple `:or`'s
-  defp match_condition({:in, [], [field, parameters]}, table, opts) do
-    field = condition_expression(field, table, opts)
+  defp match_condition({:in, [], [field, parameters]}, bindings, context) do
+    field = condition_expression(field, bindings, context)
 
     parameters
     |> Enum.map(fn parameter ->
-      {:==, field, condition_expression(parameter, table, opts)}
+      {:==, field, condition_expression(parameter, bindings, context)}
     end)
     |> List.insert_at(0, :or)
-    |> List.to_tuple
+    |> List.to_tuple()
   end
 
   # Conditions that have one argument. Functions (is_nil, not).
-  defp match_condition({op, [], [field]}, table, opts) do
-    {guard_function_operation(op), condition_expression(field, table, opts)}
+  defp match_condition({op, [], [field]}, bindings, context) do
+    {guard_function_operation(op), condition_expression(field, bindings, context)}
   end
 
   # Other conditions with multiple arguments (<, >, ==, !=, etc)
-  defp match_condition({op, [], [field, parameter]}, table, opts) do
+  defp match_condition({op, [], [field, parameter]}, bindings, context) do
     {
       guard_function_operation(op),
-      condition_expression(field, table, opts),
-      condition_expression(parameter, table, opts)
+      condition_expression(field, bindings, context),
+      condition_expression(parameter, bindings, context)
     }
   end
 
   # Fields
-  def condition_expression({{:., [], [{:&, [], [0]}, name]}, _, []}, table, _opts) do
-    dict = placeholders(table)
-    case List.keyfind(dict, name, 0) do
-      {_name, value} -> value
-      nil -> throw "Field `#{name}` does not exist in table `#{table}`"
-    end
+  def condition_expression({{:., [], [{:&, [], [0]}, field]}, _, []}, _bindings, context) do
+    Context.find_placeholder!(field, context)
   end
 
   # Binded variable need to be casted to type that can be compared by Mnesia guard function
-  def condition_expression({:^, [], [index]}, _table, opts) when is_list(opts) do
-    opts
+  def condition_expression({:^, [], [index]}, bindings, _context) when is_list(bindings) do
+    bindings
     |> Enum.at(index)
     |> get_binded()
     |> Ecto.Mnesia.Schema.cast_type()
   end
 
   # Recursively expand ecto query expressions and build conditions
-  def condition_expression({op, [], [left, right]}, table, opts) do
-    {guard_function_operation(op), condition_expression(left, table, opts), condition_expression(right, table, opts)}
+  def condition_expression({op, [], [left, right]}, bindings, context) do
+    {
+      guard_function_operation(op),
+      condition_expression(left, bindings, context),
+      condition_expression(right, bindings, context)
+    }
   end
 
   # Another part of this function is to use binded variables values
-  def condition_expression(%Ecto.Query.Tagged{value: value}, _table, _opts) do
-    value
-  end
-
-  def condition_expression(raw_value, _table, _opts) do
-    raw_value
-  end
+  def condition_expression(%Ecto.Query.Tagged{value: value}, _bindings, _context), do: value
+  def condition_expression(raw_value, _bindings, _context), do: raw_value
 
   # Binded variable value
   defp get_binded({value, {_, _}}), do: value
   defp get_binded(value), do: value
-
-  def placeholders(table) do
-    fields = table |> Table.get_name() |> :mnesia.table_info(:attributes)
-
-    placeholders =
-      1..length(fields)
-      |> Enum.map(&"$#{&1}")
-      |> Enum.map(&String.to_atom/1)
-
-    fields
-    |> Enum.zip(placeholders)
-  end
 
   # Convert Ecto.Query operations to MatchSpec analogs. (Only ones that doesn't match.)
   defp guard_function_operation(:!=), do: :'/='

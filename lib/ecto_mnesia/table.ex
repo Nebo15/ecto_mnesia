@@ -109,6 +109,11 @@ defmodule Ecto.Mnesia.Table do
   def count(table), do: table |> get_name() |> Mnesia.table_info(:size)
 
   @doc """
+  Get list of attributes that defined in Mnesia schema.
+  """
+  def attributes(table), do: table |> get_name() |> Mnesia.table_info(:attributes)
+
+  @doc """
   Returns auto-incremented integer ID for table in Mnesia.
 
   Sequence auto-generation is implemented as `mnesia:dirty_update_counter`.
@@ -119,6 +124,9 @@ defmodule Ecto.Mnesia.Table do
 
   @doc """
   Run function `fun` inside a Mnesia transaction with specific context.
+
+  Make sure that you don't run any code that can have side-effects inside a transactions,
+  because it may be run dozens of times.
 
   By default, context is `:async_dirty`.
   """
@@ -132,7 +140,7 @@ defmodule Ecto.Mnesia.Table do
     catch
       :exit, {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
       :exit, {:aborted, reason} -> {:error, reason}
-      :exit, reason -> {:error, reason}
+      # :exit, reason -> {:error, reason}
     end
   end
 

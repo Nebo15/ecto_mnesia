@@ -3,11 +3,25 @@ defmodule Ecto.Mnesia.QueryTest do
   require Logger
   import Ecto.Query
   import Support.EvalHelpers
+  alias Ecto.Mnesia.Query.Context
 
+  @pk_field_id :"$1"
   @status_field_id :"$9"
   @age_field_id :"$12"
 
-  defp ms({query, args}), do: Ecto.Mnesia.Query.match_spec(query, args)
+  defp ms({%Ecto.SubQuery{} = query, args}) do
+    context = "sell_offer"
+    |> Context.new(SellOffer)
+
+    Ecto.Mnesia.Query.match_spec(query, context, args)
+  end
+  defp ms({%Ecto.Query{} = query, args}) do
+    context = "sell_offer"
+    |> Context.new(SellOffer)
+    |> Context.update_selects(query.select)
+
+    Ecto.Mnesia.Query.match_spec(query, context, args)
+  end
   defp ms(query), do: ms({query, []})
 
   describe "query building" do
@@ -26,7 +40,7 @@ defmodule Ecto.Mnesia.QueryTest do
     test "in keyword style" do
       status = "foo"
       query = from(so in "sell_offer", where: so.status == ^status)
-      assert [{_, [{:==, @status_field_id, ^status}], [:"$_"]}] = ms(query)
+      assert [{_, [{:==, @status_field_id, ^status}], _}] = ms(query)
 
       # With map binding
       query = from(so in "sell_offer", where: [status: ^status])
@@ -40,7 +54,10 @@ defmodule Ecto.Mnesia.QueryTest do
                 :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
                 :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
                [],
-               [:"$_"]}] == ms(quote_and_eval(from("sell_offer", [])))
+               [[:"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
+               :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17",
+               :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
+               :"$26"]]}] == ms(quote_and_eval(from("sell_offer", [])))
     end
 
     test "in keyword style" do
@@ -49,14 +66,20 @@ defmodule Ecto.Mnesia.QueryTest do
                 :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
                 :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
                [],
-               [:"$_"]}] == ms(quote_and_eval(from so in SellOffer))
+               [[:"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
+               :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17",
+               :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
+               :"$26"]]}] == ms(quote_and_eval(from so in SellOffer))
 
       # Without name binding
       assert [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
                 :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
                 :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
                [],
-               [:"$_"]}] == ms(quote_and_eval(from SellOffer))
+               [[:"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
+               :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17",
+               :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
+               :"$26"]]}] == ms(quote_and_eval(from SellOffer))
     end
   end
 
@@ -68,11 +91,16 @@ defmodule Ecto.Mnesia.QueryTest do
 
     test "in keyword style" do
       query = from(so in "sell_offer", where: so.status == "foo")
-      assert [{_, [{:==, @status_field_id, "foo"}], [:"$_"]}] = ms(query)
+      assert [{_, [{:==, @status_field_id, "foo"}], _}] = ms(query)
 
       # With map binding
       query = from(so in "sell_offer", where: [status: "foo"])
       assert [{_, [{:==, @status_field_id, "foo"}], _}] = ms(query)
+    end
+
+    test "by :id field" do
+      query = from so in SellOffer, where: so.id == 11
+      assert [{_, [{:==, @pk_field_id, 11}], _}] = ms(query)
     end
 
     test "with `>`" do
