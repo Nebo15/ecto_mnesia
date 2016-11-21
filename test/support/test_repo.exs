@@ -96,14 +96,12 @@ defmodule TestModel do
     @doc """
     keys contains custom compound keys, than differs from `:id`.
     """
-    def keys, do: [id_seq:     [:thing],
-                   config:     [:key]]
+    def keys, do: [id_seq:     [:thing]]
 
     @doc """
     meta contains `{table,fields}` pairs for fast `mnesia` bootstrap.
     """
     def meta, do: [id_seq:     [:thing, :id],
-                   config:     [:key, :value],
                    buy_offer:  BuyOffer.__schema__(:fields),
                    sell_offer: SellOffer.__schema__(:fields),
                    my_schema:  MySchema.__schema__(:fields),
