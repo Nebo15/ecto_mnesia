@@ -78,11 +78,11 @@ defmodule Ecto.Mnesia.Adapter do
   @doc false
   # Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:nocache, {:all, %Ecto.Query{limit: limit, order_bys: order_bys, select: select} = query, context}},
+                      {:nocache, {:all, %Ecto.Query{limit: limit, order_bys: order_bys} = query, context}},
                       params, preprocess, _opts) do
     limit = limit |> get_limit()
     ordering_fn = order_bys |> Ordering.get_ordering_fn()
-    context = Context.update_selects(context, select)
+    context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
@@ -96,11 +96,11 @@ defmodule Ecto.Mnesia.Adapter do
 
   # Deletes all records that match Ecto.Query
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:nocache, {:delete_all, %Ecto.Query{limit: limit, order_bys: order_bys, select: select} = query, context}},
+                      {:nocache, {:delete_all, %Ecto.Query{limit: limit, order_bys: order_bys} = query, context}},
                       params, preprocess, _opts) do
     limit = limit |> get_limit()
     ordering_fn = order_bys |> Ordering.get_ordering_fn()
-    context = Context.update_selects(context, select)
+    context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
@@ -119,11 +119,11 @@ defmodule Ecto.Mnesia.Adapter do
   # Update all records
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
                       {:nocache, {:update_all,
-                        %Ecto.Query{limit: limit, order_bys: order_bys, updates: updates, select: select} = query, context}},
+                        %Ecto.Query{limit: limit, order_bys: order_bys, updates: updates} = query, context}},
                       params, preprocess, _opts) do
     limit = limit |> get_limit()
     ordering_fn = order_bys |> Ordering.get_ordering_fn()
-    context = Context.update_selects(context, select)
+    context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 

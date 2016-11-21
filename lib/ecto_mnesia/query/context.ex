@@ -23,6 +23,7 @@ defmodule Ecto.Mnesia.Query.Context do
   Update selects with a `Ecto.Query.fields` struct.
   """
   def update_selects(context, nil), do: context
+  def update_selects(context, %Ecto.Query{select: selects}), do: update_selects(context, selects)
   def update_selects(context, %Ecto.Query.SelectExpr{fields: selects}), do: update_selects(context, selects)
   def update_selects(context, [{:&, [], [0, selects, _selects_count]}]), do: %{context | select: selects}
   def update_selects(context, selects), do: %{context | select: selects}
