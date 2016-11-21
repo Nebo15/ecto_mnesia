@@ -131,6 +131,34 @@ defmodule Ecto.Mnesia.AdapterTest do
     end
   end
 
+  describe "select" do
+    setup do
+      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
+      |> TestRepo.insert
+
+      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
+      |> TestRepo.insert
+
+      %{loan1: loan1, loan2: loan2}
+    end
+
+    test "query by id", %{loan1: loan1} do
+      query = from so in SellOffer, where: so.id == ^loan1.id
+      assert [%SellOffer{id: loan_id}] = query |> TestRepo.all()
+      assert loan1.id == loan_id
+    end
+
+    test "all by schema" do
+      results = SellOffer |> TestRepo.all()
+      assert 2 == length(results)
+    end
+
+    test "get_by/2", %{loan2: loan2} do
+      assert %SellOffer{id: loan_id} = SellOffer |> TestRepo.get_by([id: loan2.id])
+      assert loan2.id == loan_id
+    end
+  end
+
   describe "update_all" do
     setup do
       {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
