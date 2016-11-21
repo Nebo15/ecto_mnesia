@@ -46,7 +46,7 @@ defmodule Ecto.Mnesia.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [{:confex, "~> 1.4"},
-     {:ecto, "~> 2.1.0-rc.4", optional: true},
+     {:ecto, "~> 2.1.0-rc.4"},
      {:benchfella, "~> 0.3", only: [:dev, :test]},
      {:ex_doc, ">= 0.0.0", only: [:dev, :test]},
      {:excoveralls, "~> 0.5", only: [:dev, :test]},
