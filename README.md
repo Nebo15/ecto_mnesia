@@ -22,16 +22,26 @@ MatchSpec converion utilities could be found in `Ecto.Mnesia.Query`.
 
 where `Model.Topics` is `Ecto.Schema` object.
 
+## Why Mnesia?
+
+We have production task that needs low read-latency database and our data fits in RAM, so Mnesia is a best choice: it's part of OTP, shares same space as our app does, work fast in RAM and supports transactions (it's critical for fintech projects).
+
+Why do we need adapter? We don't want to lock us to any specific database, since requirements can change. Ecto allows to switch databases by simply modifying config, and we might want to go back to Postres or another DB.
+
+### Clustering
+
+We don't recommend to use distributed Mnesia, because it's neither AP, nor CP database. (And there are no such thing as AC DB.) **Mnesia requires you to handle network partitions (split brains) manually.**
+
 ## TODO
 
 - [ ] Manually prefix names of table (namespaces), because all tables have global scope for all nodes and they can collide.
 - [ ] Support Ecto-style migrations to create tables. Get rid from Model in configuration.
 - [ ] Support most of replication and distribution options from configs.
 - [ ] Refactor `Schema` module for disambiguation from Mnesia schemas `mnesia:create_schema(ListOfNodes)`.
-- [ ] Support auto-clustering with skycluster.
 - [ ] Set Mnesia data dir from conf
 - [ ] Add `mnesia:wait_for_tables(TableList, TimeOut)` before start
 - [ ] Support sync transaction type (that waits for all nodes to finish transaction, not only commit them)
+- [ ] Support Mnesia indexes
 
 ## Usage in `config.exs`
 
