@@ -9,6 +9,7 @@ defmodule Ecto.Mnesia.Ordering do
   This function generates the ordering function that will be applied on a query result.
   """
   def get_ordering_fn([]), do: &(&1)
+  def get_ordering_fn(nil), do: &(&1)
   def get_ordering_fn(ordering) do
     fn data ->
       data

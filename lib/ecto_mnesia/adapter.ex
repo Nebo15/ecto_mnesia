@@ -71,17 +71,18 @@ defmodule Ecto.Mnesia.Adapter do
 
   @doc false
   # Prepares are called by Ecto before `execute/6` methods.
-  def prepare(operation, %Ecto.Query{from: {table, schema}} = query) do
-    {:nocache, {operation, query, Context.new(table, schema)}}
+  def prepare(operation, %Ecto.Query{from: {table, schema}, order_bys: order_bys, limit: limit} = query) do
+    ordering_fn = order_bys |> Ordering.get_ordering_fn()
+    context = table |> Context.new(schema)
+    limit = limit |> get_limit()
+    {:nocache, {operation, query, limit, context, ordering_fn}}
   end
 
   @doc false
   # Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:nocache, {:all, %Ecto.Query{limit: limit, order_bys: order_bys} = query, context}},
+                      {:nocache, {:all, %Ecto.Query{} = query, limit, context, ordering_fn}},
                       params, preprocess, _opts) do
-    limit = limit |> get_limit()
-    ordering_fn = order_bys |> Ordering.get_ordering_fn()
     context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
@@ -96,10 +97,8 @@ defmodule Ecto.Mnesia.Adapter do
 
   # Deletes all records that match Ecto.Query
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:nocache, {:delete_all, %Ecto.Query{limit: limit, order_bys: order_bys} = query, context}},
+                      {:nocache, {:delete_all, %Ecto.Query{} = query, limit, context, ordering_fn}},
                       params, preprocess, _opts) do
-    limit = limit |> get_limit()
-    ordering_fn = order_bys |> Ordering.get_ordering_fn()
     context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
@@ -118,11 +117,8 @@ defmodule Ecto.Mnesia.Adapter do
 
   # Update all records
   def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
-                      {:nocache, {:update_all,
-                        %Ecto.Query{limit: limit, order_bys: order_bys, updates: updates} = query, context}},
+                      {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, limit, context, ordering_fn}},
                       params, preprocess, _opts) do
-    limit = limit |> get_limit()
-    ordering_fn = order_bys |> Ordering.get_ordering_fn()
     context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
