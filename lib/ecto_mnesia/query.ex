@@ -13,7 +13,7 @@ defmodule Ecto.Mnesia.Query do
     do: raise Ecto.Query.CompileError, "Subqueries is not supported by Mnesia adapter."
   def match_spec(%Ecto.Query{havings: havings}, _context, _bindings) when is_list(havings) and length(havings) > 0,
     do: raise Ecto.Query.CompileError, "Havings is not supported by Mnesia adapter."
-  def match_spec(%Ecto.Query{} = query, %Context{} = context, bindings) do
+  def match_spec(%Ecto.Query{} = query, %Context{} = context, bindings) when is_list(bindings) do
     [{match_head(context), match_conditions(query, bindings, context), [match_body(context)]}]
   end
 
@@ -37,13 +37,12 @@ defmodule Ecto.Mnesia.Query do
   defp match_conditions([], _bindings, _context, acc),
     do: acc
   defp match_conditions([%{expr: expr, params: params} | tail], bindings, context, acc) do
-    condition = match_condition(expr, merge_bindings(params, bindings), context)
+    condition = match_condition(expr, merge_bindings(bindings, params), context)
     match_conditions(tail, bindings, context, [condition | acc])
   end
 
   # `expr.params` seems to be always empty, but we need to deal with cases when it's not
   defp merge_bindings(bindings1, bindings2) when is_list(bindings1) and is_list(bindings2), do: bindings1 ++ bindings2
-  defp merge_bindings(nil, bindings), do: bindings
   defp merge_bindings(bindings, nil), do: bindings
 
   # `is_nil` is a special case when we need to :== with nil value
