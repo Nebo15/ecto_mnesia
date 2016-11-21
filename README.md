@@ -71,3 +71,6 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 If [published on HexDocs](https://hex.pm/docs/tasks#hex_docs), the docs can
 be found at [https://hexdocs.pm/ecto_mnesia](https://hexdocs.pm/ecto_mnesia)
 
+## Thanks
+
+We want to thank [meh](https://github.com/meh) for his [Amnesia](https://github.com/meh/amnesia) package that helped a loot in initial Mnesia investigations. Some pieces of code was copied from hes repo.
