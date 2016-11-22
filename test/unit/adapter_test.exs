@@ -306,9 +306,18 @@ defmodule Ecto.Mnesia.AdapterTest do
       %{loan1: loan1, loan2: loan2, loan3: loan3}
     end
 
+    test "multiple rules" do
+      [res1, res2, res3] = TestRepo.all from so in SellOffer,
+        order_by: [asc: so.loan_id, asc: so.age]
+
+      [^res1, ^res2, ^res3] = TestRepo.all from so in SellOffer,
+        order_by: [so.loan_id, so.age],
+        order_by: [so.loan_id, so.age]
+    end
+
     test "field", %{loan1: loan1, loan2: loan2, loan3: loan3} do
       [res1, res2, res3] = TestRepo.all from so in SellOffer,
-        order_by: so.age
+        order_by: [asc: so.loan_id, asc: so.age]
 
       assert res1.age < res2.age
       assert res2.age < res3.age

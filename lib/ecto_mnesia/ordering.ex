@@ -18,10 +18,15 @@ defmodule Ecto.Mnesia.Ordering do
   end
 
   defp sort([left], [right], ordering) do
-    cmp(left, right, ordering) == :lt
+    cmp(left, right, join_exprs(ordering)) == :lt
   end
 
-  defp cmp(left, right, [%{expr: [asc: {{:., [], [{:&, [], [0]}, field]}, _,_}]} | t]) do
+  defp join_exprs([%{expr: exprs1}, %{expr: exprs2} | t]) do
+    join_exprs([%{expr: Keyword.merge(exprs1, exprs2)} | t])
+  end
+  defp join_exprs([%{expr: exprs1}]), do: exprs1
+
+  defp cmp(left, right, [{:asc, {{:., [], [{:&, [], [0]}, field]}, _,_}} | t]) do
     case {Map.get(left, field), Map.get(right, field)} do
       {l, r} when l < r ->
         :lt
@@ -32,7 +37,7 @@ defmodule Ecto.Mnesia.Ordering do
     end
   end
 
-  defp cmp(left, right, [%{expr: [desc: {{:., [], [{:&, [], [0]}, field]}, _,_}]} | t]) do
+  defp cmp(left, right, [{:desc, {{:., [], [{:&, [], [0]}, field]}, _,_}} | t]) do
     case {Map.get(left, field), Map.get(right, field)} do
       {l, r} when l < r ->
         :gt
