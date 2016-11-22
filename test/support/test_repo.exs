@@ -1,7 +1,7 @@
 # TODO: describe what is this and how to build it
 Application.put_env(:ecto_mnesia, TestRepo,
   mnesia_meta_schema: TestModel,
-  adapter: Ecto.Mnesia.Adapter,
+  adapter: Ecto.Adapters.Mnesia,
   mnesia_backend:  :ram_copies)
 
 defmodule SellOffer do
@@ -112,7 +112,7 @@ end
 defmodule TestRepo do
   use Ecto.Repo,
     otp_app: :ecto_mnesia,
-    adapter: Ecto.Mnesia.Adapter
+    adapter: Ecto.Adapters.Mnesia
 end
 
 TestRepo.start_link

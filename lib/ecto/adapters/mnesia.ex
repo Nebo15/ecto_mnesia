@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Adapter do
+defmodule Ecto.Adapters.Mnesia do
   @moduledoc """
   Ecto.Adapter for `mnesia` Erlang term database.
 
@@ -30,8 +30,8 @@ defmodule Ecto.Mnesia.Adapter do
   """
   require Logger
   alias :mnesia, as: Mnesia
-  alias Ecto.Mnesia.{Record, Ordering, Query, Table}
-  alias Ecto.Mnesia.Query.Context
+  alias Ecto.Mnesia.{Record, Query, Table}
+  alias Ecto.Mnesia.Record.{Context, Ordering, Update}
 
   @behaviour Ecto.Adapter
 
@@ -129,7 +129,7 @@ defmodule Ecto.Mnesia.Adapter do
       |> Table.select(match_spec, limit)
       |> Enum.map(fn record ->
         update = record
-        |> Query.Update.update_record(updates, params, context)
+        |> Update.update_record(updates, params, context)
         |> List.insert_at(0, table)
         |> List.to_tuple()
 

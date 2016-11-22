@@ -7,7 +7,7 @@ defmodule Ecto.Mnesia.Query do
     - [Match Specification](http://erlang.org/doc/apps/erts/match_spec.html)
   """
   require Logger
-  alias Ecto.Mnesia.Query.Context
+  alias Ecto.Mnesia.Record.Context
 
   def match_spec(%Ecto.SubQuery{}, _context, _bindings),
     do: raise Ecto.Query.CompileError, "Subqueries is not supported by Mnesia adapter."

@@ -3,7 +3,7 @@ defmodule Ecto.Mnesia.QueryTest do
   require Logger
   import Ecto.Query
   import Support.EvalHelpers
-  alias Ecto.Mnesia.Query.Context
+  alias Ecto.Mnesia.Record.Context
 
   @pk_field_id :"$1"
   @status_field_id :"$9"

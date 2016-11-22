@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Ordering do
+defmodule Ecto.Mnesia.Record.Ordering do
   @moduledoc """
   Since there are `order by` function in Mnesia,
   we need to generate function that will order data after fetching it from DB.

@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.AdapterTest do
+defmodule Ecto.Adapters.MnesiaTest do
   use ExUnit.Case
   require Logger
   import Ecto.Query, only: [from: 2]

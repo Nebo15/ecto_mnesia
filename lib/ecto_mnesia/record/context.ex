@@ -1,9 +1,9 @@
-defmodule Ecto.Mnesia.Query.Context do
+defmodule Ecto.Mnesia.Record.Context do
   @moduledoc """
   Context for operations with a database.
   """
   alias Ecto.Mnesia.Table
-  alias Ecto.Mnesia.Query.Context
+  alias Ecto.Mnesia.Record.Context
 
   defstruct schema: nil, table: nil, fields: [], select: []
 

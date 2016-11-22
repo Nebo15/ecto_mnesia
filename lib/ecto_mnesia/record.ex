@@ -2,7 +2,7 @@ defmodule Ecto.Mnesia.Record do
   @moduledoc """
   This module provides set of helpers for conversions between Mnesia records and Ecto Schemas.
   """
-  alias Ecto.Mnesia.Query.Context
+  alias Ecto.Mnesia.Record.Context
 
   @doc """
   Convert Ecto Schema struct to tuple that can be inserted to Mnesia.

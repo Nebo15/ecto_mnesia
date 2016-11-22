@@ -1,9 +1,9 @@
-defmodule Ecto.Mnesia.Query.Update do
+defmodule Ecto.Mnesia.Record.Update do
   @moduledoc """
   This module implements `update` instructions from Ecto.Query struct.
   """
   alias Ecto.Mnesia.Query
-  alias Ecto.Mnesia.Query.Context
+  alias Ecto.Mnesia.Record.Context
 
   def update_record(record, [], _bindings, _context), do: record
   def update_record(record, [%Ecto.Query.QueryExpr{expr: expr} | expr_t], bindings, context) do
