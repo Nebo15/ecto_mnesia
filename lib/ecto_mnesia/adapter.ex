@@ -191,7 +191,7 @@ defmodule Ecto.Mnesia.Adapter do
     end
   end
 
-  defp put_new_pk(params, pk_field, table) do
+  defp put_new_pk(params, pk_field, table) when is_list(params) and is_atom(pk_field) do
     {_, params} = params
     |> Keyword.get_and_update(pk_field, fn
       nil -> {nil, Table.next_id(table)}
