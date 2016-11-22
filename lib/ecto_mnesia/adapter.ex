@@ -30,7 +30,7 @@ defmodule Ecto.Mnesia.Adapter do
   """
   require Logger
   alias :mnesia, as: Mnesia
-  alias Ecto.Mnesia.{Schema, Ordering, Query, Table}
+  alias Ecto.Mnesia.{Record, Ordering, Query, Table}
   alias Ecto.Mnesia.Query.Context
 
   @behaviour Ecto.Adapter
@@ -80,25 +80,25 @@ defmodule Ecto.Mnesia.Adapter do
 
   @doc false
   # Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
-  def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
+  def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:all, %Ecto.Query{} = query, limit, context, ordering_fn}},
-                      params, preprocess, _opts) do
+                      params, _preprocess, _opts) do
     context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     result = table
     |> Table.select(match_spec, limit)
-    |> Schema.from_records(schema, fields, take, preprocess)
+    |> Record.to_schema(context)
     |> ordering_fn.()
 
     {length(result), result}
   end
 
   # Deletes all records that match Ecto.Query
-  def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
+  def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:delete_all, %Ecto.Query{} = query, limit, context, ordering_fn}},
-                      params, preprocess, _opts) do
+                      params, _preprocess, opts) do
     context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
@@ -111,14 +111,14 @@ defmodule Ecto.Mnesia.Adapter do
         {:ok, _} = Table.delete(table, List.first(record))
         record
       end)
-      |> return_all(schema, fields, take, preprocess, ordering_fn)
+      |> return_all(context, ordering_fn, opts)
     end)
   end
 
   # Update all records
-  def execute(_repo, %{sources: {{table, schema}}, fields: fields, take: take},
+  def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, limit, context, ordering_fn}},
-                      params, preprocess, _opts) do
+                      params, _preprocess, opts) do
     context = Context.update_selects(context, query)
     match_spec = Query.match_spec(query, context, params)
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
@@ -136,17 +136,21 @@ defmodule Ecto.Mnesia.Adapter do
         {:ok, result} = Table.update(table, List.first(record), update)
         result
       end)
-      |> return_all(schema, fields, take, preprocess, ordering_fn)
+      |> return_all(context, ordering_fn, opts)
     end)
   end
 
-  defp return_all(records, _schema, nil, _take, _preprocess, _ordering_fn), do: {length(records), nil}
-  defp return_all(records, schema, fields, take, preprocess, ordering_fn) do
-    result = records
-    |> Schema.from_records(schema, fields, take, preprocess)
-    |> ordering_fn.()
+  defp return_all(records, context, ordering_fn, opts) do
+    case Keyword.get(opts, :returning) do
+      true ->
+        result = records
+        |> Record.to_schema(context)
+        |> ordering_fn.()
 
-    {length(result), result}
+        {length(result), result}
+      _ ->
+        {length(records), nil}
+    end
   end
 
   @doc """
@@ -181,7 +185,7 @@ defmodule Ecto.Mnesia.Adapter do
     |> Keyword.put_new(pk_field, Table.next_id(table)) # TODO: increment counter only when ID is not set
 
     record = schema
-    |> Schema.to_record(params, table)
+    |> Record.new(params, table)
 
     case Table.insert(table, record) do
       {:ok, ^record} ->
@@ -222,7 +226,7 @@ defmodule Ecto.Mnesia.Adapter do
     pk = get_pk!(filter, autogenerate_id)
 
     record = schema
-    |> Schema.to_record(params, table)
+    |> Record.new(params, table)
 
     case table |> Table.update(pk, record) do
       {:ok, _record} -> {:ok, params}

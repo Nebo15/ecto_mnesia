@@ -86,7 +86,6 @@ defmodule Ecto.Mnesia.Query do
     bindings
     |> Enum.at(index)
     |> get_binded()
-    |> Ecto.Mnesia.Schema.cast_type()
   end
 
   # Recursively expand ecto query expressions and build conditions
