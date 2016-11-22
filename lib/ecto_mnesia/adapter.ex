@@ -181,18 +181,24 @@ defmodule Ecto.Mnesia.Adapter do
   end
 
   defp do_insert(table, schema, pk_field, params) do
-    params = params
-    |> Keyword.put_new(pk_field, Table.next_id(table)) # TODO: increment counter only when ID is not set
-
-    record = schema
-    |> Record.new(params, table)
-
+    params = params |> put_new_pk(pk_field, table)
+    record = schema |> Record.new(params, table)
     case Table.insert(table, record) do
       {:ok, ^record} ->
         {:ok, params}
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp put_new_pk(params, pk_field, table) do
+    {_, params} = params
+    |> Keyword.get_and_update(pk_field, fn
+      nil -> {nil, Table.next_id(table)}
+      val -> {val, val}
+    end)
+
+    params
   end
 
   def stream(_, _, _, _, _, _),
