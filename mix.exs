@@ -47,7 +47,6 @@ defmodule Ecto.Mnesia.Mixfile do
   defp deps do
     [{:confex, "~> 1.4"},
      {:ecto, "~> 2.1.0-rc.4"},
-     {:benchfella, "~> 0.3", only: [:dev, :test]},
      {:ex_doc, ">= 0.0.0", only: [:dev, :test]},
      {:excoveralls, "~> 0.5", only: [:dev, :test]},
      {:dogma, "> 0.1.0", only: [:dev, :test]},
@@ -58,7 +57,7 @@ defmodule Ecto.Mnesia.Mixfile do
   defp package do
     [contributors: ["Maxim Sokhatsky", "Nebo #15"],
      maintainers: ["Nebo #15"],
-     licenses: ["LISENSE.md"],
+     licenses: ["MIT"],
      links: %{github: "https://github.com/Nebo15/ecto_mnesia"},
      files: ~w(lib LICENSE.md mix.exs README.md)]
   end
