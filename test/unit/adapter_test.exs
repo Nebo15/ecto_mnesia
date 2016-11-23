@@ -157,6 +157,32 @@ defmodule Ecto.Adapters.MnesiaTest do
       assert %SellOffer{id: loan_id} = SellOffer |> TestRepo.get_by([id: loan2.id])
       assert loan2.id == loan_id
     end
+
+    test "structured" do
+      assert [%SellOffer{} | _] =
+        from(so in SellOffer, select: so)
+        |> TestRepo.all()
+
+      assert ["hello", "hello"] ==
+        from(so in SellOffer, select: so.loan_id)
+        |> TestRepo.all()
+
+      assert [["hello", 11], ["hello", 15]] ==
+        from(so in SellOffer, select: [so.loan_id, so.age])
+        |> TestRepo.all()
+
+      assert [{"hello", 11}, {"hello", 15}] ==
+        from(so in SellOffer, select: {so.loan_id, so.age})
+        |> TestRepo.all()
+
+      assert [{"hello", "42", 43}, {"hello", "42", 43}] ==
+        from(so in SellOffer, select: {so.loan_id, ^to_string(40 + 2), 43})
+        |> TestRepo.all()
+
+      assert [%{answer: 42, n: "hello"}, %{answer: 42, n: "hello"}] ==
+        from(so in SellOffer, select: %{n: so.loan_id, answer: 42})
+        |> TestRepo.all()
+    end
   end
 
   describe "update_all" do

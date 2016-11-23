@@ -5,7 +5,7 @@ defmodule Ecto.Mnesia.Record.Context do
   alias Ecto.Mnesia.Table
   alias Ecto.Mnesia.Record.Context
 
-  defstruct schema: nil, table: nil, fields: [], select: [], match_body: nil
+  defstruct schema: nil, table: nil, fields: [], select: [], match_body: nil, bindings: []
 
   def new(table, schema) when is_binary(table) and is_atom(schema) do
     table = table |> Table.get_name()
@@ -24,6 +24,8 @@ defmodule Ecto.Mnesia.Record.Context do
   def update_select(context, select), do: %{context | select: select}
 
   def update_match_body(context, match_body), do: %{context | match_body: match_body}
+
+  def update_bindings(context, bindings), do: %{context | bindings: bindings}
 
   def find_index!(field, %Context{fields: fields, table: table}) when is_atom(field) do
     case Keyword.get(fields, field) do

@@ -16,6 +16,7 @@ defmodule Ecto.Mnesia.Query do
   def match_spec(%Ecto.Query{} = query, %Context{} = context, bindings) when is_list(bindings) do
     context = context
     |> Context.update_select(query)
+    |> Context.update_bindings(bindings)
 
     body = match_body(context, bindings)
 
@@ -47,9 +48,9 @@ defmodule Ecto.Mnesia.Query do
     |> Enum.map(&Context.find_placeholder!(&1, context))
   end
 
-  defp select_fields({:&, [], [0, fields, _]}, bindings), do: fields
-  defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, bindings), do: [field]
-  defp select_fields({:^, [], [_]} = expr, bindings), do: [binding_expression(expr, bindings)]
+  defp select_fields({:&, [], [0, fields, _]}, _bindings), do: fields
+  defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, _bindings), do: [field]
+  defp select_fields({:^, [], [_]} = expr, bindings), do: [unbind(expr, bindings)]
   defp select_fields(exprs, bindings) when is_list(exprs) do
     exprs
     |> Enum.flat_map(&select_fields(&1, bindings))
@@ -116,14 +117,14 @@ defmodule Ecto.Mnesia.Query do
 
   # Another part of this function is to use binded variables values
   def condition_expression(%Ecto.Query.Tagged{value: value}, _bindings, _context), do: value
-  def condition_expression(raw_value, bindings, _context), do: binding_expression(raw_value, bindings)
+  def condition_expression(raw_value, bindings, _context), do: unbind(raw_value, bindings)
 
-  defp binding_expression({:^, [], [index]}, bindings) do
+  def unbind({:^, [], [index]}, bindings) do
     bindings
     |> Enum.at(index)
     |> get_binded()
   end
-  defp binding_expression(value, _bindings), do: value
+  def unbind(value, _bindings), do: value
 
   # Binded variable value
   defp get_binded({value, {_, _}}), do: value

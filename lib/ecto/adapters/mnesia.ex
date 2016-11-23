@@ -88,7 +88,7 @@ defmodule Ecto.Adapters.Mnesia do
 
     result = table
     |> Table.select(match_spec, limit)
-    |> Record.to_schema(context)
+    |> Record.to_query_result(context)
     |> ordering_fn.()
 
     {length(result), result}
@@ -141,7 +141,7 @@ defmodule Ecto.Adapters.Mnesia do
     case Keyword.get(opts, :returning) do
       true ->
         result = records
-        |> Record.to_schema(context)
+        |> Record.to_query_result(context)
         |> ordering_fn.()
 
         {length(result), result}

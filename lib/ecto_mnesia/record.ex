@@ -18,30 +18,50 @@ defmodule Ecto.Mnesia.Record do
     end)
   end
 
-  def to_schema([], _), do: []
-  def to_schema([el | _] = records, %Context{} = context) when is_list(el) do
+  def to_query_result([], _), do: []
+  def to_query_result([el | _] = records, %Context{} = context) when is_list(el) do
     records
-    |> Enum.map(&to_schema(&1, context))
+    |> Enum.map(&to_query_result(&1, context))
   end
-  def to_schema(record, %Context{schema: schema, match_body: match_body, fields: fields, select: select}) do
-    {_, fields} = record
-    |> Enum.reduce({0, schema.__struct__}, &reduce_fields(&1, &2, match_body, fields))
-
-    # fields = fields
-    # |> Enum.map(&select_fields(&1, select))
-
-    [fields]
+  def to_query_result(record, %Context{schema: schema, select: select} = context) do
+    select
+    |> result_type(schema)
+    |> do_transform(record, context)
   end
 
-  defp reduce_fields(field_value, {field_index, struct}, match_body, fields) do
-    field_name =  field_index |> get_field_name!(fields, match_body)
+  defp result_type(%Ecto.Query.SelectExpr{expr: {:&, [], [0]}}, schema), do: schema.__struct__
+  defp result_type(%Ecto.Query.SelectExpr{expr: _expr}, _schema), do: []
+
+  defp do_transform(acc, record, %Context{match_body: match_body, fields: fields}) when is_map(acc) do
+    record
+    |> Enum.reduce({0, acc}, &reduce_schema(&1, &2, match_body, fields))
+    |> elem(1)
+    |> List.wrap()
+  end
+
+  defp do_transform([], record, %Context{select: %{fields: select_fields}, bindings: bindings}) do
+    select_fields
+    |> Enum.reduce({0, []}, &reduce_list(&1, &2, record, bindings))
+    |> elem(1)
+    |> List.wrap()
+  end
+
+  defp reduce_schema(field_value, {field_index, struct}, match_body, fields) when is_map(struct) do
+    field_name = field_index |> get_field_name!(fields, match_body)
     struct = struct |> Map.put(field_name, field_value)
     {field_index + 1, struct}
   end
 
-  def get_field_name!(fields, field_index) do
-    field_name = Enum.find_value(fields, fn
-      {field_name, {^field_index, _}} -> field_name
+  defp reduce_list({{:., [], [{:&, [], [0]}, _field_name]}, _, []}, {field_index, acc}, record, _bindings)
+    when is_list(acc) do
+    field_value = record |> Enum.at(field_index)
+    {field_index + 1, acc ++ [field_value]}
+  end
+
+  defp reduce_list({:^, _, _} = binding, {field_index, acc}, _record, bindings) do
+    field_value = binding |> Query.unbind(bindings)
+    {field_index + 1, acc ++ [field_value]}
+  end
 
   defp get_field_name!(field_index, fields, match_body) do
     field_placeholder = match_body |> Enum.at(field_index)
