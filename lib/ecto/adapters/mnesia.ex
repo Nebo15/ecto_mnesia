@@ -51,7 +51,7 @@ defmodule Ecto.Adapters.Mnesia do
   Returns the childspec that starts the adapter process.
   This method is called from `Ecto.Repo.Supervisor.init/2`.
   """
-  def child_spec(repo, opts), do: Supervisor.Spec.supervisor(Supervisor, [[], [strategy: :one_for_one]])
+  def child_spec(_repo, _opts), do: Supervisor.Spec.supervisor(Supervisor, [[], [strategy: :one_for_one]])
 
   @doc """
   Automatically generate next ID.
