@@ -10,15 +10,12 @@ defmodule Ecto.Mnesia.Storage do
   @doc """
   Start the Mnesia database.
   """
-  def start, do: IO.inspect Mnesia.start
+  def start, do: Mnesia.start
 
   @doc """
   Stop the Mnesia database.
   """
-  def stop do
-    IO.inspect "stopping mnesia"
-    Mnesia.stop
-  end
+  def stop, do: Mnesia.stop
 
   @doc """
   Creates the storage given by options.
@@ -38,8 +35,6 @@ defmodule Ecto.Mnesia.Storage do
   def storage_up(config) do
     config = conf(config)
 
-    IO.inspect "storage up"
-
     Mnesia.change_table_copy_type(:schema, config[:host], config[:mnesia_backend])
     case Mnesia.create_schema([config[:host]]) do
       {:error, {_, {:already_exists, _}}} -> :ok
@@ -51,7 +46,6 @@ defmodule Ecto.Mnesia.Storage do
   end
 
   def storage_down(config) do
-    IO.inspect "storage down"
     config = conf(config)
     stop()
     Mnesia.delete_schema([config[:host]])
@@ -105,21 +99,5 @@ defmodule Ecto.Mnesia.Storage do
       mnesia_backend: config[:mnesia_backend] || :disc_copies,
       mnesia_meta_schema: (if config[:mnesia_meta_schema], do: config[:mnesia_meta_schema], else: [])
     ]
-  end
-
-  @doc """
-  This is dirty hack for Ecto that is trying to receive child spec from adapter,
-  and we don't have any workers and supervisors that needs to be added to tree (Mnesia is a separate OTP app).
-
-  So we simply handle whatever Repo.Supervisor is sending to us and initiating Mnesia tables.
-  """
-  def start_link(conn_mod, _opts \\ []) do
-    conn_mod[:otp_app]
-    |> Confex.get(conn_mod[:repo])
-
-    # This hack is here because Ecto expects repo to be supervised, and mnesia is a separate otp app
-    # Task.start(fn -> :ok end)
-    {:ok, self()}
-    # :ignore
   end
 end

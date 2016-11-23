@@ -114,5 +114,3 @@
 #     otp_app: :ecto_mnesia,
 #     adapter: Ecto.Adapters.Mnesia
 # end
-
-# TestRepo.start_link
