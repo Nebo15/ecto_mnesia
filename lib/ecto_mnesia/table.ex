@@ -111,7 +111,9 @@ defmodule Ecto.Mnesia.Table do
   @doc """
   Get list of attributes that defined in Mnesia schema.
   """
-  def attributes(table), do: table |> get_name() |> Mnesia.table_info(:attributes)
+  def attributes(table) do
+    table |> get_name() |> Mnesia.table_info(:attributes)
+  end
 
   @doc """
   Returns auto-incremented integer ID for table in Mnesia.
@@ -140,7 +142,7 @@ defmodule Ecto.Mnesia.Table do
     catch
       :exit, {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
       :exit, {:aborted, reason} -> {:error, reason}
-      # :exit, reason -> {:error, reason}
+      :exit, reason -> raise ErlangError.normalize(reason, :erlang.get_stacktrace)
     end
   end
 

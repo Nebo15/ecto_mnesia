@@ -10,12 +10,15 @@ defmodule Ecto.Mnesia.Storage do
   @doc """
   Start the Mnesia database.
   """
-  def start, do: Mnesia.start
+  def start, do: IO.inspect Mnesia.start
 
   @doc """
   Stop the Mnesia database.
   """
-  def stop, do: Mnesia.stop
+  def stop do
+    IO.inspect "stopping mnesia"
+    Mnesia.stop
+  end
 
   @doc """
   Creates the storage given by options.
@@ -35,14 +38,20 @@ defmodule Ecto.Mnesia.Storage do
   def storage_up(config) do
     config = conf(config)
 
-    Mnesia.change_table_copy_type(:schema, config[:host], config[:mnesia_backend])
-    Mnesia.create_schema([config[:host]])
+    IO.inspect "storage up"
 
-    # TODO: Remove it from storage up to be used in Ecto Migrator
-    migrate_schemas(config[:host], config[:mnesia_backend], config[:mnesia_meta_schema])
+    Mnesia.change_table_copy_type(:schema, config[:host], config[:mnesia_backend])
+    case Mnesia.create_schema([config[:host]]) do
+      {:error, {_, {:already_exists, _}}} -> :ok
+      :ok -> :ok
+    end
+
+    # # TODO: Remove it from storage up to be used in Ecto Migrator
+    # migrate_schemas(config[:host], config[:mnesia_backend], config[:mnesia_meta_schema])
   end
 
   def storage_down(config) do
+    IO.inspect "storage down"
     config = conf(config)
     stop()
     Mnesia.delete_schema([config[:host]])
@@ -107,8 +116,10 @@ defmodule Ecto.Mnesia.Storage do
   def start_link(conn_mod, _opts \\ []) do
     conn_mod[:otp_app]
     |> Confex.get(conn_mod[:repo])
-    |> storage_up
 
+    # This hack is here because Ecto expects repo to be supervised, and mnesia is a separate otp app
+    # Task.start(fn -> :ok end)
     {:ok, self()}
+    # :ignore
   end
 end

@@ -35,15 +35,11 @@ defmodule Ecto.Adapters.Mnesia do
 
   @behaviour Ecto.Adapter
 
-  @required_apps [:mnesia]
+  @required_apps :mnesia
 
   @doc false
   defmacro __before_compile__(_env), do: :ok
 
-  @doc """
-  This function tells Ecto that we don't support DDL transactions.
-  """
-  def supports_ddl_transaction?, do: true
   def in_transaction?(_repo), do: Mnesia.is_transaction()
 
   @doc """
@@ -158,18 +154,18 @@ defmodule Ecto.Adapters.Mnesia do
   - Process `on_conflict`
   - Process `returning`
   """
-  def insert(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}}, params,
+  def insert(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}}, params,
              _on_conflict, _returning, _opts) do
-    do_insert(table, schema, pk_field, params)
+    do_insert(table, schema, autogenerate_id, params)
   end
 
-  def insert_all(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}},
+  def insert_all(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
                  _header, rows, _on_conflict, _returning, _opts) do
     table = table |> Table.get_name()
     count = Table.transaction(fn ->
       rows
       |> Enum.reduce(0, fn params, acc ->
-        do_insert(table, schema, pk_field, params)
+        do_insert(table, schema, autogenerate_id, params)
         acc + 1
       end)
     end)
@@ -177,7 +173,19 @@ defmodule Ecto.Adapters.Mnesia do
     {count, nil}
   end
 
-  defp do_insert(table, schema, pk_field, params) do
+  # Schemas without PK
+  defp do_insert(table, schema, nil, params) do
+    record = schema |> Record.new(params, table)
+    case Table.insert(table, record) do
+      {:ok, ^record} ->
+        {:ok, params}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # TODO: Check that PK is unique, don't override record
+  defp do_insert(table, schema, {pk_field, _pk_type}, params) do
     params = params |> put_new_pk(pk_field, table)
     record = schema |> Record.new(params, table)
     case Table.insert(table, record) do
@@ -255,4 +263,16 @@ defmodule Ecto.Adapters.Mnesia do
 
   defp get_limit(nil), do: nil
   defp get_limit(%Ecto.Query.QueryExpr{expr: limit}), do: limit
+
+
+  # Also we need to provide storage behavior to support migrations
+  @behaviour Ecto.Adapter.Storage
+  # @behaviour Ecto.Adapter.Structure
+
+  defdelegate storage_up(config), to: Ecto.Mnesia.Storage
+  defdelegate storage_down(config), to: Ecto.Mnesia.Storage
+  defdelegate execute_ddl(repo, ddl, opts), to: Ecto.Mnesia.Storage.Migrator, as: :execute
+
+  # Ecto.Migrator needs to know about our DDL support
+  def supports_ddl_transaction?, do: false
 end

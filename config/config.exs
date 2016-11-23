@@ -26,7 +26,16 @@ use Mix.Config
 
 # Configure your database
 config :ecto_mnesia,
-  ecto_repos: []
+  ecto_repos: [TestRepo]
 
 config :ecto_mnesia, :stacktrace_depth, 20
 config :ex_unit, capture_log: true
+
+config :ecto_mnesia, TestRepo,
+  mnesia_meta_schema: TestModel,
+  adapter: Ecto.Adapters.Mnesia,
+  mnesia_backend: :ram_copies
+
+# config :mnesia, :dir, "priv/data/mnesia/"
+
+:erlang.system_flag(:backtrace_depth, 1000)

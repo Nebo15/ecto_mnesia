@@ -9,7 +9,11 @@ defmodule Ecto.Mnesia.Record.Context do
 
   def new(table, schema) when is_binary(table) and is_atom(schema) do
     table = table |> Table.get_name()
-    mnesia_attributes = table |> Table.attributes()
+    mnesia_attributes = try do
+      table |> Table.attributes()
+    catch
+      :exit, {:aborted, {:no_exists, _, :attributes}} -> []
+    end
 
     fields = 1..length(mnesia_attributes)
     |> Enum.map(fn index ->
@@ -34,6 +38,8 @@ defmodule Ecto.Mnesia.Record.Context do
     end
   end
 
+  def find_placeholder!({{:., [], [{:&, [], [0]}, field]}, _, []}, %Context{} = context) when is_atom(field),
+    do: field |> find_placeholder!(context)
   def find_placeholder!(field, %Context{fields: fields, table: table}) when is_atom(field) do
     case Keyword.get(fields, field) do
       nil -> raise ArgumentError, "Field `#{inspect field}` does not exist in table `#{inspect table}`"

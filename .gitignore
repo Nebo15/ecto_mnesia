@@ -42,3 +42,5 @@ rel/*/
 
 # Temporary files
 tmp/
+priv/data/
+Mnesia.nonode@nohost/
