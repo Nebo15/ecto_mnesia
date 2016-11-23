@@ -1,4 +1,7 @@
 defmodule Ecto.Mnesia.Storage.Migrator do
+  @moduledoc """
+  Migrations support for Mnesia adapter.
+  """
   alias Ecto.Mnesia.Table
   alias :mnesia, as: Mnesia
 
@@ -90,6 +93,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   end
 
   defp do_create_table(table, attributes) do
+    # TODO: read nodes from config
     case Mnesia.create_table(table, [attributes: attributes, disc_copies: [Kernel.node()]]) do
       {:atomic, :ok} ->
         Mnesia.wait_for_tables([table], 1_000)
@@ -107,7 +111,8 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     |> Enum.filter(&(&1 != field))
   end
 
-  defp alter_fn(record, fields_before, fields_after) do
+  # TODO
+  defp alter_fn(record, _fields_before, _fields_after) do
     record
   end
 
