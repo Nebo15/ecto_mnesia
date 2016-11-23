@@ -5,7 +5,7 @@ defmodule Ecto.Mnesia.Record.Context do
   alias Ecto.Mnesia.Table
   alias Ecto.Mnesia.Record.Context
 
-  defstruct schema: nil, table: nil, fields: [], select: []
+  defstruct schema: nil, table: nil, fields: [], select: [], match_body: nil
 
   def new(table, schema) when is_binary(table) and is_atom(schema) do
     table = table |> Table.get_name()
@@ -16,17 +16,14 @@ defmodule Ecto.Mnesia.Record.Context do
       {Enum.at(mnesia_attributes, index - 1), {index - 1, String.to_atom("$#{index}")}}
     end)
 
-    %Context{schema: schema, table: table, fields: fields, select: mnesia_attributes}
+    %Context{schema: schema, table: table, fields: fields, select: mnesia_attributes, match_body: nil}
   end
 
-  @doc """
-  Update selects with a `Ecto.Query.fields` struct.
-  """
-  def update_selects(context, nil), do: context
-  def update_selects(context, %Ecto.Query{select: selects}), do: update_selects(context, selects)
-  def update_selects(context, %Ecto.Query.SelectExpr{fields: selects}), do: update_selects(context, selects)
-  def update_selects(context, [{:&, [], [0, selects, _selects_count]}]), do: %{context | select: selects}
-  def update_selects(context, selects), do: %{context | select: selects}
+  def update_select(context, nil), do: context
+  def update_select(context, %Ecto.Query{select: select}), do: update_select(context, select)
+  def update_select(context, select), do: %{context | select: select}
+
+  def update_match_body(context, match_body), do: %{context | match_body: match_body}
 
   def find_index!(field, %Context{fields: fields, table: table}) when is_atom(field) do
     case Keyword.get(fields, field) do
@@ -41,6 +38,7 @@ defmodule Ecto.Mnesia.Record.Context do
       {_index, placeholder} -> placeholder
     end
   end
+  def find_placeholder!(field, %Context{}), do: field
 
   def get_placeholders(%Context{fields: fields}) do
     fields

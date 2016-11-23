@@ -14,7 +14,16 @@ defmodule Ecto.Mnesia.Query do
   def match_spec(%Ecto.Query{havings: havings}, _context, _bindings) when is_list(havings) and length(havings) > 0,
     do: raise Ecto.Query.CompileError, "Havings is not supported by Mnesia adapter."
   def match_spec(%Ecto.Query{} = query, %Context{} = context, bindings) when is_list(bindings) do
-    [{match_head(context), match_conditions(query, bindings, context), [match_body(context)]}]
+    context = context
+    |> Context.update_select(query)
+
+    body = match_body(context, bindings)
+
+    # Save placeholders in context so we will know how to extract result data
+    context = context
+    |> Context.update_match_body(body)
+
+    {context, [{match_head(context), match_conditions(query, bindings, context), [body]}]}
   end
 
   # Build match_spec head part (data placeholders)
@@ -25,10 +34,25 @@ defmodule Ecto.Mnesia.Query do
     |> List.to_tuple()
   end
 
-  # Build match_spec body part (query conditions)
-  defp match_body(%Context{select: select} = context) do
+  # Select was present
+  defp match_body(%Context{select: %Ecto.Query.SelectExpr{fields: expr}} = context, bindings) do
+    expr
+    |> select_fields(bindings)
+    |> Enum.map(&Context.find_placeholder!(&1, context))
+  end
+
+  # Select wasn't present, so we select everything
+  defp match_body(%Context{select: select} = context, _bindings) when is_list(select) do
     select
     |> Enum.map(&Context.find_placeholder!(&1, context))
+  end
+
+  defp select_fields({:&, [], [0, fields, _]}, bindings), do: fields
+  defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, bindings), do: [field]
+  defp select_fields({:^, [], [_]} = expr, bindings), do: [binding_expression(expr, bindings)]
+  defp select_fields(exprs, bindings) when is_list(exprs) do
+    exprs
+    |> Enum.flat_map(&select_fields(&1, bindings))
   end
 
   # Resolve params
@@ -81,13 +105,6 @@ defmodule Ecto.Mnesia.Query do
     Context.find_placeholder!(field, context)
   end
 
-  # Binded variable need to be casted to type that can be compared by Mnesia guard function
-  def condition_expression({:^, [], [index]}, bindings, _context) when is_list(bindings) do
-    bindings
-    |> Enum.at(index)
-    |> get_binded()
-  end
-
   # Recursively expand ecto query expressions and build conditions
   def condition_expression({op, [], [left, right]}, bindings, context) do
     {
@@ -99,7 +116,14 @@ defmodule Ecto.Mnesia.Query do
 
   # Another part of this function is to use binded variables values
   def condition_expression(%Ecto.Query.Tagged{value: value}, _bindings, _context), do: value
-  def condition_expression(raw_value, _bindings, _context), do: raw_value
+  def condition_expression(raw_value, bindings, _context), do: binding_expression(raw_value, bindings)
+
+  defp binding_expression({:^, [], [index]}, bindings) do
+    bindings
+    |> Enum.at(index)
+    |> get_binded()
+  end
+  defp binding_expression(value, _bindings), do: value
 
   # Binded variable value
   defp get_binded({value, {_, _}}), do: value

@@ -13,14 +13,16 @@ defmodule Ecto.Mnesia.QueryTest do
     context = "sell_offer"
     |> Context.new(SellOffer)
 
-    Ecto.Mnesia.Query.match_spec(query, context, args)
+    {_context, spec} = Ecto.Mnesia.Query.match_spec(query, context, args)
+    spec
   end
   defp ms({%Ecto.Query{} = query, args}) do
     context = "sell_offer"
     |> Context.new(SellOffer)
-    |> Context.update_selects(query.select)
+    |> Context.update_select(query.select)
 
-    Ecto.Mnesia.Query.match_spec(query, context, args)
+    {_context, spec} = Ecto.Mnesia.Query.match_spec(query, context, args)
+    spec
   end
   defp ms(query), do: ms({query, []})
 
