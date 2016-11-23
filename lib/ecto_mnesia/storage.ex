@@ -17,6 +17,8 @@ defmodule Ecto.Mnesia.Storage do
   """
   def stop, do: Mnesia.stop
 
+  # TODO: Support ram-only storage creation and migrations
+
   @doc """
   Creates the storage given by options.
 
@@ -40,9 +42,6 @@ defmodule Ecto.Mnesia.Storage do
       {:error, {_, {:already_exists, _}}} -> :ok
       :ok -> :ok
     end
-
-    # # TODO: Remove it from storage up to be used in Ecto Migrator
-    # migrate_schemas(config[:host], config[:mnesia_backend], config[:mnesia_meta_schema])
   end
 
   def storage_down(config) do
@@ -50,47 +49,6 @@ defmodule Ecto.Mnesia.Storage do
     stop()
     Mnesia.delete_schema([config[:host]])
     start()
-  end
-
-  @doc """
-  Creates tables and indexes from a Ecto.Mnesia meta-schema.
-  """
-  def migrate_schemas(_host, _copy_type, []), do: :ok
-  def migrate_schemas(host, copy_type, meta_schema) do
-    Enum.map(meta_schema.meta, fn {table, fields} ->
-      create_table(host, table, copy_type, fields)
-      create_indexes(meta_schema, table)
-    end)
-
-    :ok
-  end
-
-  @doc """
-  Creates a table.
-  """
-  def create_table(host, table, copy_type, fields) do
-    Mnesia.create_table(table, [{:attributes, fields}, {copy_type, [host]}])
-  end
-
-  @doc """
-  Creates table secondary indexes.
-  """
-  def create_indexes(meta_schema, table) do
-    case List.keymember?(meta_schema.keys, table, 0) do
-      false ->
-        Mnesia.add_table_index(table, :id)
-      true ->
-        process_keys(meta_schema, table)
-    end
-  end
-
-  defp process_keys(model, table) do
-    case List.keyfind(model.keys, table, 0) do
-      {table, key_fields} ->
-        Enum.map(key_fields, &Mnesia.add_table_index(table, &1))
-      _ ->
-        :skip
-    end
   end
 
   defp conf(config) do

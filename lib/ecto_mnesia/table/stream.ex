@@ -21,17 +21,9 @@ defmodule Ecto.Mnesia.Table.Stream do
     Table.first(table)
   end
 
-  # defp last(%Stream{table: table}) do
-  #   Table.last(table)
-  # end
-
   defp next(%Stream{table: table}, key) do
     Table.next(table, key)
   end
-
-  # defp prev(%Stream{table: table}, key) do
-  #   Table.prev(table, key)
-  # end
 
   defp read(%Stream{table: table}, key) do
     Table.get(table, key)

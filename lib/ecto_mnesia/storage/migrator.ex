@@ -8,17 +8,17 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   #   {:create, Table.t, [table_subcommand]} |
   #   {:create_if_not_exists, Table.t, [table_subcommand]} |
   #   {:alter, Table.t, [table_subcommand]} |
-  #   {:drop, Table.t} |
-  #   {:drop_if_exists, Table.t} |
+  #   TODO: {:drop, Table.t} |
+  #   TODO: {:drop_if_exists, Table.t} |
   #   {:create, Index.t} |
-  #   {:create_if_not_exists, Index.t} |
-  #   {:drop, Index.t} |
-  #   {:drop_if_exists, Index.t}
+  #   TODO: {:create_if_not_exists, Index.t} |
+  #   TODO: {:drop, Index.t} |
+  #   TODO: {:drop_if_exists, Index.t}
 
   # @typedoc "All commands allowed within the block passed to `table/2`"
   # @type table_subcommand ::
   #   {:add, field :: atom, type :: Ecto.Type.t | Reference.t, Keyword.t} |
-  #   {:modify, field :: atom, type :: Ecto.Type.t | Reference.t, Keyword.t} |
+  #   TODO: {:modify, field :: atom, type :: Ecto.Type.t | Reference.t, Keyword.t} |
   #   {:remove, field :: atom}
 
 
@@ -100,11 +100,6 @@ defmodule Ecto.Mnesia.Storage.Migrator do
 
   defp reduce_fields({:add, field, _type, _opts}, fields) do
     fields ++ [field]
-  end
-
-  defp reduce_fields({:drop, field, _type, _opts}, fields) do
-    fields
-    |> Enum.filter(&(&1 != field))
   end
 
   defp reduce_fields({:remove, field}, fields) do

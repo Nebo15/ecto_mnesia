@@ -87,28 +87,6 @@ defmodule MySchemaNoPK do
   end
 end
 
-defmodule TestModel do
-    @moduledoc """
-    Marketplace Metainfo with configuration for `Ecto.Adapter.Mnesia`.
-    """
-    require Record
-
-    @doc """
-    keys contains custom compound keys, than differs from `:id`.
-    """
-    def keys, do: [id_seq:     [:thing]]
-
-    @doc """
-    meta contains `{table,fields}` pairs for fast `mnesia` bootstrap.
-    """
-    def meta, do: [id_seq:     [:thing, :id],
-                   buy_offer:  BuyOffer.__schema__(:fields),
-                   sell_offer: SellOffer.__schema__(:fields),
-                   my_schema:  MySchema.__schema__(:fields),
-                   my_schema_no_pk:  MySchemaNoPK.__schema__(:fields)]
-
-end
-
 defmodule TestRepo do
   use Ecto.Repo,
     otp_app: :ecto_mnesia,
