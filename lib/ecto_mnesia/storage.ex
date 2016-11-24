@@ -7,6 +7,12 @@ defmodule Ecto.Mnesia.Storage do
 
   @behaviour Ecto.Adapter.Storage
 
+  @defaults [
+    host: {:system, :atom, "MNESIA_HOST", Kernel.node()},
+    dir: {:system, "MNESIA_DATA_DIR", "priv/data/mnesia"},
+    storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
+  ]
+
   @doc """
   Start the Mnesia database.
   """
@@ -31,15 +37,20 @@ defmodule Ecto.Mnesia.Storage do
   ## Examples
 
       storage_up(host: `Kernel.node`,
-                 copy_type: :,
-                 hostname: 'localhost')
+                 storage_type: :disc_copies,
+                 dir: 'my_data_dir/')
   """
   def storage_up(config) do
     config = conf(config)
 
-    Mnesia.change_table_copy_type(:schema, config[:host], config[:mnesia_backend])
+    :ok = Application.put_env(:mnesia, :dir, String.to_charlist(config[:dir]))
+    IO.puts "==> Ensuring Mnesia data directory exists: #{config[:dir]}"
+    File.mkdir_p!(config[:dir])
+
+    Mnesia.change_table_copy_type(:schema, config[:host], config[:storage_type])
+
     case Mnesia.create_schema([config[:host]]) do
-      {:error, {_, {:already_exists, _}}} -> :ok
+      {:error, {_, {:already_exists, _}}} -> {:error, :already_up}
       :ok -> :ok
     end
   end
@@ -53,9 +64,10 @@ defmodule Ecto.Mnesia.Storage do
 
   defp conf(config) do
     [
-      host: config[:host] || Kernel.node,
-      mnesia_backend: config[:mnesia_backend] || :disc_copies,
-      mnesia_meta_schema: (if config[:mnesia_meta_schema], do: config[:mnesia_meta_schema], else: [])
+      host: config[:host] || @defaults[:host],
+      dir: config[:dir] || @defaults[:dir],
+      storage_type: config[:storage_type] || @defaults[:storage_type]
     ]
+    |> Confex.process_env()
   end
 end

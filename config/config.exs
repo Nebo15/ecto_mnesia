@@ -1,41 +1,13 @@
-# This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-# This configuration is loaded before any dependency and is restricted
-# to this project. If another project depends on this project, this
-# file won't be loaded nor affect the parent project. For this reason,
-# if you want to provide default values for your application for
-# 3rd-party users, it should be done in your "mix.exs" file.
+config :ex_unit, capture_log: true
 
-# You can configure for your application as:
-#
-#     config :ecto_mnesia, key: :value
-#
-# And access this configuration in your application as:
-#
-#     Application.get_env(:ecto_mnesia, :key)
-#
-# Or configure a 3rd-party app:
-#
-#     config :logger, level: :info
-#
-# Or read environment variables in runtime (!) as:
-#
-#     :var_name, "${ENV_VAR_NAME}"
-
-# Configure your database
+# TODO remove this
 config :ecto_mnesia,
   ecto_repos: [TestRepo]
 
-config :ecto_mnesia, :stacktrace_depth, 20
-config :ex_unit, capture_log: true
-
 config :ecto_mnesia, TestRepo,
-  mnesia_meta_schema: TestModel,
-  adapter: Ecto.Adapters.Mnesia,
-  mnesia_backend: :ram_copies
-
-# config :mnesia, :dir, "priv/data/mnesia/"
+  adapter: Ecto.Adapters.Mnesia
+# END
 
 :erlang.system_flag(:backtrace_depth, 1000)

@@ -14,7 +14,7 @@ Supported features:
 
 Planned features:
 
-- Secondary indexes
+- Secondary indexes.
 - Native primary key and unique index constraints.
 - Custom primary keys.
 - Other transactional contexts.
@@ -38,8 +38,22 @@ So clustering should be an option only when you absolutely sure how you will rec
 
 ### Mnesia configuration from `config.exs`
 
-    config :ecto, :mnesia_meta_schema, Sample.Model
-    config :ecto, :mnesia_backend,  :ram_copies
+    config :ecto_mnesia,
+      host: {:system, :atom, "MNESIA_HOST", Kernel.node()},
+      dir: {:system, "MNESIA_DATA_DIR", "priv/data/mnesia"},
+      storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
+
+Notice that `{:system, [TYPE], ENV_NAME, default_value}` tuples can be replaced with any raw values.
+
+They tell adapter to read configuration from environment in run-time, so you will be able to set `MNESIA_HOST`, `MNESIA_DATA_DIR`, `MNESIA_STORAGE_TYPE` environment variables, which is very useful when you releasing app in production and don't want to rebuild all code on each config change.
+
+If you want to know more how this tool works take look at [Confex](https://github.com/Nebo15/confex) package.
+
+#### Storage Types
+
+  - `:disc_copies` - store data in both RAM and on dics. Recommended value for most cases.
+  - `:ram_copies` - store data only in RAM. Data will be lost on node restart. Useful when working with large datasets that don't need to be persisted.
+  - `:disc_only_copies` - store data only on dics. This will limit database size to 2GB and affect adapter performance.
 
 ## Installation
 
