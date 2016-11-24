@@ -1,6 +1,6 @@
 defmodule Ecto.Mnesia.Storage.Migrator do
   @moduledoc """
-  Migrations support for Mnesia adapter.
+  This module implements `Ecto.Storage` behavior that is used by `Ecto.Migrations`.
   """
   alias Ecto.Mnesia.Table
   alias :mnesia, as: Mnesia

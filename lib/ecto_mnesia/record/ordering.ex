@@ -1,12 +1,11 @@
 defmodule Ecto.Mnesia.Record.Ordering do
   @moduledoc """
-  Since there are `order by` function in Mnesia,
-  we need to generate function that will order data after fetching it from DB.
+  This module emulates `query.order_bys` behavior, because Mnesia doesn't have native support for result ordering.
   """
   require Logger
 
   @doc """
-  This function generates the ordering function that will be applied on a query result.
+  Returns the ordering function that needs to be applied on a query result.
   """
   def get_ordering_fn([]), do: &(&1)
   def get_ordering_fn(nil), do: &(&1)
