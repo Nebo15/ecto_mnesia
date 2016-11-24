@@ -13,7 +13,6 @@ defmodule Ecto.Mnesia.Mixfile do
      compilers: [] ++ Mix.compilers,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     aliases: aliases(),
      deps: deps(),
      test_coverage: [tool: ExCoveralls],
      preferred_cli_env: [coveralls: :test],
@@ -60,17 +59,5 @@ defmodule Ecto.Mnesia.Mixfile do
      licenses: ["MIT"],
      links: %{github: "https://github.com/Nebo15/ecto_mnesia"},
      files: ~w(lib LICENSE.md mix.exs README.md)]
-  end
-
-  # Aliases are shortcuts or tasks specific to the current project.
-  # For example, to create, migrate and run the seeds file at once:
-  #
-  #     $ mix ecto.setup
-  #
-  # See the documentation for `Mix` for more info on aliases.
-  defp aliases do
-    ["ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-     "ecto.reset": ["ecto.drop", "ecto.setup"],
-     "test":       ["ecto.create --quiet", "ecto.migrate", "test"]]
   end
 end
