@@ -29,7 +29,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
 
   # Tables
   def execute(_repo, {:create, %Ecto.Migration.Table{name: table}, instructions}, _opts) do
-    enshure_pk_table!()
+    ensure_pk_table!()
 
     new_attrs = instructions
     |> Enum.reduce([], &reduce_fields/2)
@@ -42,7 +42,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   end
 
   def execute(_repo, {:create_if_not_exists, %Ecto.Migration.Table{name: table}, instructions}, _opts) do
-    enshure_pk_table!()
+    ensure_pk_table!()
 
     table_attrs = try do
       table |> Table.get_name() |> Mnesia.table_info(:attributes)
@@ -61,7 +61,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   end
 
   def execute(_repo, {:alter, %Ecto.Migration.Table{name: table}, instructions}, _opts) do
-    enshure_pk_table!()
+    ensure_pk_table!()
 
     table_attrs = try do
       table |> Table.get_name() |> Mnesia.table_info(:attributes)
@@ -76,6 +76,18 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     case Mnesia.transform_table(table, &alter_fn(&1, table_attrs, new_attrs), new_attrs) do
       {:atomic, :ok} -> :ok
       {:aborted, {:already_exists, ^table}} -> :ok
+    end
+  end
+
+  def execute(_repo, {:drop, %Ecto.Migration.Table{name: table}}, _opts) do
+    case Mnesia.delete_table(table) do
+      {:atomic, :ok} -> :ok
+    end
+  end
+
+  def execute(_repo, {:drop_if_exists, %Ecto.Migration.Table{name: table}}, _opts) do
+    case Mnesia.delete_table(table) do
+      {:atomic, :ok} -> :ok
     end
   end
 
@@ -116,7 +128,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     record
   end
 
-  defp enshure_pk_table! do
+  defp ensure_pk_table! do
     res = try do
       Mnesia.table_info(:size, @pk_table_name)
     catch
