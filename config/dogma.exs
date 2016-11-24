@@ -8,7 +8,7 @@ config :dogma,
     ~r(\Atest/),
   ],
   override: [
-    %Rule.LineLength{ max_length: 120 },
-    %Rule.InfixOperatorPadding{ enabled: false },
-    %Rule.FunctionArity{ max: 8 },
+    %Rule.LineLength{max_length: 120},
+    %Rule.InfixOperatorPadding{enabled: false},
+    %Rule.FunctionArity{max: 8},
   ]

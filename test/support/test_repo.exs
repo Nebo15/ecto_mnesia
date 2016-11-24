@@ -1,8 +1,5 @@
-# TODO: describe what is this and how to build it
-Application.put_env(:ecto_mnesia, TestRepo,
-  mnesia_meta_schema: TestModel,
-  adapter: Ecto.Adapters.Mnesia,
-  mnesia_backend:  :ram_copies)
+Application.put_env :ecto_mnesia, TestRepo,
+  adapter: Ecto.Adapters.Mnesia
 
 defmodule SellOffer do
   use Ecto.Schema
@@ -36,39 +33,6 @@ defmodule SellOffer do
   end
 end
 
-defmodule BuyOffer do
-  use Ecto.Schema
-
-  schema "buy_offer" do
-    field :trader_id,                :string
-    field :port_id,                  :string
-    field :started_at,               Ecto.DateTime
-    field :ended_at,                 Ecto.DateTime
-    field :volume,                   :decimal
-    field :apr,                      :decimal
-    field :intermediary_apr,         :decimal
-    field :loan_invest_whole,        :boolean
-    field :loan_investment_max,      :decimal
-    field :loan_investment_min,      :decimal
-    field :guaranteed,               :boolean
-    field :etc,                      :binary
-    field :age,                      :integer
-    field :income,                   :decimal
-    field :dpc,                      :integer
-    field :dpd,                      :integer
-    field :loan_risk_class,          :string
-    field :loan_risk_subclass,       :string
-    field :loan_duration,            :integer
-    field :loan_product_type,        :string
-    field :loan_currencies,          :string
-    field :loan_originators,         :string
-    field :loan_oap,                 :decimal
-    field :loan_status,              :string
-    field :loan_apr,                 :decimal
-    field :loan_is_prolonged,        :boolean
-  end
-end
-
 defmodule MySchema do
   use Ecto.Schema
 
@@ -87,32 +51,42 @@ defmodule MySchemaNoPK do
   end
 end
 
-defmodule TestModel do
-    @moduledoc """
-    Marketplace Metainfo with configuration for `Ecto.Adapter.Mnesia`.
-    """
-    require Record
+defmodule TestRepoMigrations do
+  use Ecto.Migration
 
-    @doc """
-    keys contains custom compound keys, than differs from `:id`.
-    """
-    def keys, do: [id_seq:     [:thing]]
+  # Whenever you change this migration, don't forget to drop mnesia data directory to reset migrations history
+  def change do
+    create_if_not_exists table(:sell_offer) do
+      add :trader_id,          :integer
+      add :loan_id,            :string
+      add :book_value,         :integer
+      add :min_price_rate,     :decimal
+      add :max_shared_apr,     :decimal
+      add :dividable,          :boolean
+      add :guaranteed,         :boolean
+      add :status,             :string
+      add :booked_at,          :utc_datetime
+      add :ended_at,           :utc_datetime
+      add :age,                :integer
+      add :income,             :decimal
+      add :dpc,                :integer
+      add :dpd,                :integer
+      add :loan_risk_class,    :string
+      add :loan_risk_subclass, :string
+      add :loan_duration,      :integer
+      add :loan_product_type,  :string
+      add :loan_currency,      :string
+      add :loan_oap,           :decimal
+      add :loan_status,        :string
+      add :loan_apr,           :decimal
+      add :loan_is_prolonged,  :boolean
 
-    @doc """
-    meta contains `{table,fields}` pairs for fast `mnesia` bootstrap.
-    """
-    def meta, do: [id_seq:     [:thing, :id],
-                   buy_offer:  BuyOffer.__schema__(:fields),
-                   sell_offer: SellOffer.__schema__(:fields),
-                   my_schema:  MySchema.__schema__(:fields),
-                   my_schema_no_pk:  MySchemaNoPK.__schema__(:fields)]
-
+      timestamps()
+    end
+  end
 end
 
 defmodule TestRepo do
   use Ecto.Repo,
-    otp_app: :ecto_mnesia,
-    adapter: Ecto.Adapters.Mnesia
+    otp_app: :ecto_mnesia
 end
-
-TestRepo.start_link

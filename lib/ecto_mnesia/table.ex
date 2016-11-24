@@ -111,7 +111,9 @@ defmodule Ecto.Mnesia.Table do
   @doc """
   Get list of attributes that defined in Mnesia schema.
   """
-  def attributes(table), do: table |> get_name() |> Mnesia.table_info(:attributes)
+  def attributes(table) do
+    table |> get_name() |> Mnesia.table_info(:attributes)
+  end
 
   @doc """
   Returns auto-incremented integer ID for table in Mnesia.
@@ -131,16 +133,30 @@ defmodule Ecto.Mnesia.Table do
   By default, context is `:async_dirty`.
   """
   def transaction(fun, context \\ :async_dirty) do
+    case Mnesia.is_transaction() do
+      true ->
+        fun.()
+      false ->
+        activity(context, fun)
+    end
+  end
+
+  # Activity is hard to deal with because it doesn't return value in dirty context (exits),
+  # and returns in a transactional context
+  defp activity(context, fun) do
     try do
       case Mnesia.activity(context, fun) do
-        {:aborted, error} -> {:error, error}
-        {:atomic, r} -> r
-        x -> x
+        {:aborted, :rollback} -> :rollback
+        {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
+        {:aborted, reason} -> {:error, reason}
+        {:atomic, reason} -> reason
+        result -> result
       end
     catch
+      :exit, {:aborted, :rollback} -> :rollback
       :exit, {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
       :exit, {:aborted, reason} -> {:error, reason}
-      # :exit, reason -> {:error, reason}
+      :exit, reason -> raise ErlangError.normalize(reason, :erlang.get_stacktrace)
     end
   end
 

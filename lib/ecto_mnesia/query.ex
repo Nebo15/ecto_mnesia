@@ -18,6 +18,10 @@ defmodule Ecto.Mnesia.Query do
     |> Context.update_select(query)
     |> Context.update_bindings(bindings)
 
+    # TODO rename bindings to sources
+    # https://github.com/elixir-ecto/ecto/blob/8cddc211ac9423702faee8b5528a1b11474762d3
+    # /lib/ecto/adapters/postgres/connection.ex#L406
+
     body = match_body(context, bindings)
 
     # Save placeholders in context so we will know how to extract result data

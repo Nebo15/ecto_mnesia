@@ -7,6 +7,12 @@ defmodule Ecto.Mnesia.Storage do
 
   @behaviour Ecto.Adapter.Storage
 
+  @defaults [
+    host: {:system, :atom, "MNESIA_HOST", Kernel.node()},
+    dir: {:system, "MNESIA_DATA_DIR", "priv/data/mnesia"},
+    storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
+  ]
+
   @doc """
   Start the Mnesia database.
   """
@@ -16,6 +22,8 @@ defmodule Ecto.Mnesia.Storage do
   Stop the Mnesia database.
   """
   def stop, do: Mnesia.stop
+
+  # TODO: Support ram-only storage creation and migrations
 
   @doc """
   Creates the storage given by options.
@@ -29,19 +37,27 @@ defmodule Ecto.Mnesia.Storage do
   ## Examples
 
       storage_up(host: `Kernel.node`,
-                 copy_type: :,
-                 hostname: 'localhost')
+                 storage_type: :disc_copies,
+                 dir: 'my_data_dir/')
   """
   def storage_up(config) do
     config = conf(config)
 
-    Mnesia.change_table_copy_type(:schema, config[:host], config[:mnesia_backend])
-    Mnesia.create_schema([config[:host]])
+    :ok = Application.put_env(:mnesia, :dir, String.to_charlist(config[:dir]))
+    IO.puts "==> Ensuring Mnesia data directory exists: #{config[:dir]}"
+    File.mkdir_p!(config[:dir])
 
-    # TODO: Remove it from storage up to be used in Ecto Migrator
-    migrate_schemas(config[:host], config[:mnesia_backend], config[:mnesia_meta_schema])
+    Mnesia.change_table_copy_type(:schema, config[:host], config[:storage_type])
+
+    case Mnesia.create_schema([config[:host]]) do
+      {:error, {_, {:already_exists, _}}} -> {:error, :already_up}
+      :ok -> :ok
+    end
   end
 
+  @doc """
+  Temporarily stops Mnesia, deletes schema and then brings it back up again.
+  """
   def storage_down(config) do
     config = conf(config)
     stop()
@@ -49,66 +65,12 @@ defmodule Ecto.Mnesia.Storage do
     start()
   end
 
-  @doc """
-  Creates tables and indexes from a Ecto.Mnesia meta-schema.
-  """
-  def migrate_schemas(_host, _copy_type, []), do: :ok
-  def migrate_schemas(host, copy_type, meta_schema) do
-    Enum.map(meta_schema.meta, fn {table, fields} ->
-      create_table(host, table, copy_type, fields)
-      create_indexes(meta_schema, table)
-    end)
-
-    :ok
-  end
-
-  @doc """
-  Creates a table.
-  """
-  def create_table(host, table, copy_type, fields) do
-    Mnesia.create_table(table, [{:attributes, fields}, {copy_type, [host]}])
-  end
-
-  @doc """
-  Creates table secondary indexes.
-  """
-  def create_indexes(meta_schema, table) do
-    case List.keymember?(meta_schema.keys, table, 0) do
-      false ->
-        Mnesia.add_table_index(table, :id)
-      true ->
-        process_keys(meta_schema, table)
-    end
-  end
-
-  defp process_keys(model, table) do
-    case List.keyfind(model.keys, table, 0) do
-      {table, key_fields} ->
-        Enum.map(key_fields, &Mnesia.add_table_index(table, &1))
-      _ ->
-        :skip
-    end
-  end
-
-  defp conf(config) do
+  def conf(config \\ []) do
     [
-      host: config[:host] || Kernel.node,
-      mnesia_backend: config[:mnesia_backend] || :disc_copies,
-      mnesia_meta_schema: (if config[:mnesia_meta_schema], do: config[:mnesia_meta_schema], else: [])
+      host: config[:host] || @defaults[:host],
+      dir: config[:dir] || @defaults[:dir],
+      storage_type: config[:storage_type] || @defaults[:storage_type]
     ]
-  end
-
-  @doc """
-  This is dirty hack for Ecto that is trying to receive child spec from adapter,
-  and we don't have any workers and supervisors that needs to be added to tree (Mnesia is a separate OTP app).
-
-  So we simply handle whatever Repo.Supervisor is sending to us and initiating Mnesia tables.
-  """
-  def start_link(conn_mod, _opts \\ []) do
-    conn_mod[:otp_app]
-    |> Confex.get(conn_mod[:repo])
-    |> storage_up
-
-    {:ok, self()}
+    |> Confex.process_env()
   end
 end

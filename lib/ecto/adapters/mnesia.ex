@@ -1,32 +1,42 @@
 defmodule Ecto.Adapters.Mnesia do
   @moduledoc """
-  Ecto.Adapter for `mnesia` Erlang term database.
+  Ecto 2.X adapter for Mnesia Erlang term database.
 
-  It supports compound `mnesia` indexes (aka secondary indexes) in database setup.
-  The implementation relies directly on `mnesia` application.
-  Supports partial Ecto.Query to MatchSpec conversion for `mnesia:select` (and, join).
-  MatchSpec converion utilities could be found in `Ecto.Mnesia.Query`.
+  ## Run-Time Storage Options
 
-  ## Configuration Sample
+    * `:host` - Node hostname.
+    * `:dir` - Path where Mnesia should store DB data.
+    * `:storage_type` - Type of Mnesia storage.
 
-      defmodule Sample.Model do
-        require Record
+  ### Mnesia Storage Types
 
-        def keys, do: [id_seq:       [:thing],
-                       topics:       [:whom,:who,:what],
-                       config:       [:key]]
+    * `:disc_copies` - store data in both RAM and on dics. Recommended value for most cases.
+    * `:ram_copies` - store data only in RAM. Data will be lost on node restart.
+    Useful when working with large datasets that don't need to be persisted.
+    * `:disc_only_copies` - store data only on dics. This will limit database size to 2GB and affect
+    adapter performance.
 
-        def meta, do: [id_seq:       [:thing, :id],
-                       config:       [:key, :value],
-                       topics:       Model.Topics.__schema__(:fields)]
-      end
+  ## Limitations
 
-  where `Model.Topics` is `Ecto.Schema` object.
+  There are some limitations when using Ecto with MySQL that one
+  needs to be aware of.
 
-  ## usage in `config.exs`
+  ### Transactions
 
-      config :ecto, :mnesia_meta_schema, Sample.Model
-      config :ecto, :mnesia_backend,  :ram_copies
+  Right now all transactions will be run in dirty context.
+
+  ### UUIDs
+
+  Mnesia does not support UUID types. Ecto emulates them by using `binary(16)`.
+
+  ### DDL Transaction
+
+  Mnesia migrations are DDL's by their nature, so Ecto does not have control over it
+  and behavior may be different from other adapters.
+
+  ### Types
+
+  Mnesia doesn't care about types, so all data will be stored as-is.
   """
   require Logger
   alias :mnesia, as: Mnesia
@@ -41,33 +51,27 @@ defmodule Ecto.Adapters.Mnesia do
   defmacro __before_compile__(_env), do: :ok
 
   @doc """
-  This function tells Ecto that we don't support DDL transactions.
-  """
-  def supports_ddl_transaction?, do: true
-  def in_transaction?(_repo), do: Mnesia.is_transaction()
-
-  @doc """
   Ensure all applications necessary to run the adapter are started.
   """
-  def ensure_all_started(_repo, type), do: Application.ensure_all_started(@required_apps, type)
+  def ensure_all_started(_repo, type) do
+    @required_apps
+    |> Enum.each(fn app ->
+      {:ok, _} = Application.ensure_all_started(app, type)
+    end)
 
-  @doc """
-  Returns the childspec that starts the adapter process.
-  This method is called from `Ecto.Repo.Supervisor.init/2`.
-  """
-  def child_spec(_repo, opts), do: Supervisor.Spec.worker(Ecto.Mnesia.Storage, [opts])
+    {:ok, @required_apps}
+  end
 
-  @doc """
-  Automatically generate next ID.
-  """
+  @doc false
+  # Returns the childspec that starts the adapter process.
+  # This method is called from `Ecto.Repo.Supervisor.init/2`.
+  def child_spec(_repo, _opts), do: Supervisor.Spec.supervisor(Supervisor, [[], [strategy: :one_for_one]])
+
+  @doc false
+  # Automatically generate next ID for binary keys, leave sequence keys empty for generation on insert.
   def autogenerate(:id), do: nil
   def autogenerate(:embed_id), do: Ecto.UUID.autogenerate()
   def autogenerate(:binary_id), do: Ecto.UUID.autogenerate()
-
-  @doc """
-  Return directory that stores Mnesia tables on local node.
-  """
-  def path, do: Mnesia.system_info(:local_tables)
 
   @doc false
   # Prepares are called by Ecto before `execute/6` methods.
@@ -137,10 +141,14 @@ defmodule Ecto.Adapters.Mnesia do
     end)
   end
 
+  # Constructs return for `*_all` methods.
   defp return_all(records, context, ordering_fn, opts) do
     case Keyword.get(opts, :returning) do
       true ->
         result = records
+        |> Enum.map(fn record ->
+          record |> Tuple.to_list() |> List.delete_at(0)
+        end)
         |> Record.to_query_result(context)
         |> ordering_fn.()
 
@@ -150,34 +158,44 @@ defmodule Ecto.Adapters.Mnesia do
     end
   end
 
-  @doc """
-  Insert Ecto Schema struct to Mnesia database.
-
-  TODO:
-  - Process `opts`.
-  - Process `on_conflict`
-  - Process `returning`
-  """
-  def insert(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}}, params,
+  @doc false
+  # Insert Ecto Schema struct to Mnesia database.
+  def insert(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}}, params,
              _on_conflict, _returning, _opts) do
-    do_insert(table, schema, pk_field, params)
+    do_insert(table, schema, autogenerate_id, params)
   end
 
-  def insert_all(_repo, %{autogenerate_id: {pk_field, _pk_type}, schema: schema, source: {_, table}},
+  @doc false
+  # Insert all
+  # TODO: deal with `opts`: `on_conflict` and `returning`
+  def insert_all(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
                  _header, rows, _on_conflict, _returning, _opts) do
     table = table |> Table.get_name()
-    count = Table.transaction(fn ->
+    {count, _rows} = Table.transaction(fn ->
       rows
-      |> Enum.reduce(0, fn params, acc ->
-        do_insert(table, schema, pk_field, params)
-        acc + 1
+      |> Enum.reduce({0, []}, fn params, {index, acc} ->
+        {:ok, record} = do_insert(table, schema, autogenerate_id, params)
+        {index + 1, [record] ++ acc}
       end)
     end)
 
     {count, nil}
   end
 
-  defp do_insert(table, schema, pk_field, params) do
+  # Insert schema without primary keys
+  defp do_insert(table, schema, nil, params) do
+    record = schema |> Record.new(params, table)
+    case Table.insert(table, record) do
+      {:ok, ^record} ->
+        {:ok, params}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # Insert schema with auto-generating primary key value
+  # TODO: Check that PK is unique, don't override record
+  defp do_insert(table, schema, {pk_field, _pk_type}, params) do
     params = params |> put_new_pk(pk_field, table)
     record = schema |> Record.new(params, table)
     case Table.insert(table, record) do
@@ -188,6 +206,7 @@ defmodule Ecto.Adapters.Mnesia do
     end
   end
 
+  # Generate new sequenced primary key for table
   defp put_new_pk(params, pk_field, table) when is_list(params) and is_atom(pk_field) do
     {_, params} = params
     |> Keyword.get_and_update(pk_field, fn
@@ -198,21 +217,27 @@ defmodule Ecto.Adapters.Mnesia do
     params
   end
 
+  @doc false
+  # Repo.stream is not supported
   def stream(_, _, _, _, _, _),
     do: raise ArgumentError, "stream/6 is not supported by adapter, use Ecto.Mnesia.Table.Stream.new/2 instead"
 
+  @doc false
+  # Run `fun` inside a Mnesia transaction
   def transaction(_repo, _opts, fun) do
     Table.transaction(fun)
   end
 
   @doc false
-  # Mnesia does not support transaction rollback
-  def rollback(_repo, _tid),
-    do: raise ArgumentError, "rollback/2 is not supported by the adapter"
+  # Returns true when called inside a transaction.
+  def in_transaction?(_repo), do: Mnesia.is_transaction()
 
-  @doc """
-  Deletes a record from a Mnesia database.
-  """
+  @doc false
+  # Transaction rollbacks is not supported
+  def rollback(_repo, _tid), do: Mnesia.abort(:rollback)
+
+  @doc false
+  # Deletes a record from a Mnesia database.
   def delete(_repo, %{schema: _schema, source: {_, table}, autogenerate_id: autogenerate_id}, filter, _opts) do
     pk = get_pk!(filter, autogenerate_id)
     case Table.delete(table, pk) do
@@ -221,9 +246,8 @@ defmodule Ecto.Adapters.Mnesia do
     end
   end
 
-  @doc """
-  Updates record stored in a Mnesia database.
-  """
+  @doc false
+  # Updates record stored in a Mnesia database.
   def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: autogenerate_id},
              params, filter, _autogen, _opts) do
     pk = get_pk!(filter, autogenerate_id)
@@ -247,6 +271,7 @@ defmodule Ecto.Adapters.Mnesia do
   end
 
   @doc false
+  # Required methods for Ecto type casing
   def loaders(:binary_id, type), do: [Ecto.UUID, type]
   def loaders(primitive, _type), do: [primitive]
 
@@ -255,4 +280,15 @@ defmodule Ecto.Adapters.Mnesia do
 
   defp get_limit(nil), do: nil
   defp get_limit(%Ecto.Query.QueryExpr{expr: limit}), do: limit
+
+  # Storage behaviour for migrations
+  @behaviour Ecto.Adapter.Storage
+
+  def supports_ddl_transaction?, do: false
+
+  defdelegate storage_up(config), to: Ecto.Mnesia.Storage
+  defdelegate storage_down(config), to: Ecto.Mnesia.Storage
+  defdelegate execute_ddl(repo, ddl, opts), to: Ecto.Mnesia.Storage.Migrator, as: :execute
+
+  # @behaviour Ecto.Adapter.Structure
 end
