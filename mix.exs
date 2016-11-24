@@ -55,7 +55,7 @@ defmodule Ecto.Mnesia.Mixfile do
 
   # Settings for publishing in Hex package manager:
   defp package do
-    [contributors: ["Maxim Sokhatsky", "Nebo #15"],
+    [contributors: ["Maxim Sokhatsky (5ht)", "Nebo #15"],
      maintainers: ["Nebo #15"],
      licenses: ["MIT"],
      links: %{github: "https://github.com/Nebo15/ecto_mnesia"},
