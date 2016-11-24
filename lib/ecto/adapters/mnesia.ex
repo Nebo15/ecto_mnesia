@@ -146,6 +146,9 @@ defmodule Ecto.Adapters.Mnesia do
     case Keyword.get(opts, :returning) do
       true ->
         result = records
+        |> Enum.map(fn record ->
+          record |> Tuple.to_list() |> List.delete_at(0)
+        end)
         |> Record.to_query_result(context)
         |> ordering_fn.()
 
@@ -157,7 +160,6 @@ defmodule Ecto.Adapters.Mnesia do
 
   @doc false
   # Insert Ecto Schema struct to Mnesia database.
-  # TODO: deal with `opts`: `on_conflict` and `returning`
   def insert(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}}, params,
              _on_conflict, _returning, _opts) do
     do_insert(table, schema, autogenerate_id, params)
@@ -165,14 +167,15 @@ defmodule Ecto.Adapters.Mnesia do
 
   @doc false
   # Insert all
+  # TODO: deal with `opts`: `on_conflict` and `returning`
   def insert_all(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
                  _header, rows, _on_conflict, _returning, _opts) do
     table = table |> Table.get_name()
-    count = Table.transaction(fn ->
+    {count, _rows} = Table.transaction(fn ->
       rows
-      |> Enum.reduce(0, fn params, acc ->
-        do_insert(table, schema, autogenerate_id, params)
-        acc + 1
+      |> Enum.reduce({0, []}, fn params, {index, acc} ->
+        {:ok, record} = do_insert(table, schema, autogenerate_id, params)
+        {index + 1, [record] ++ acc}
       end)
     end)
 

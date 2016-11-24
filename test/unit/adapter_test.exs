@@ -91,6 +91,16 @@ defmodule Ecto.Adapters.MnesiaTest do
     assert {3, nil} == TestRepo.insert_all(SellOffer, records)
   end
 
+  # test "insert all with return" do
+  #   records = [
+  #     [loan_id: "hello", age: 11],
+  #     [loan_id: "hello", age: 15],
+  #     [loan_id: "world", age: 21]
+  #   ]
+
+  #   assert {3, nil} == TestRepo.insert_all(SellOffer, records, returning: true)
+  # end
+
   describe "update" do
     setup do
       {:ok, loan} = %SellOffer{loan_id: "hello"}
@@ -212,6 +222,12 @@ defmodule Ecto.Adapters.MnesiaTest do
       assert age1 in [12, 16, 22]
       assert age2 in [12, 16, 22]
       assert age3 in [12, 16, 22]
+    end
+
+    test "with returning" do
+      query = from so in SellOffer, update: [set: [status: "updated", guaranteed: true], inc: [age: 1]]
+
+      assert {3, [%SellOffer{}, %SellOffer{}, %SellOffer{}]} = query |> TestRepo.update_all([], returning: true)
     end
 
     test "by struct" do

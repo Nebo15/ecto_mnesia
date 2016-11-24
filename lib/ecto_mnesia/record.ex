@@ -31,6 +31,7 @@ defmodule Ecto.Mnesia.Record do
 
   defp result_type(%Ecto.Query.SelectExpr{expr: {:&, [], [0]}}, schema), do: schema.__struct__
   defp result_type(%Ecto.Query.SelectExpr{expr: _expr}, _schema), do: []
+  defp result_type(list, _schema) when is_list(list), do: []
 
   defp do_transform(acc, record, %Context{match_body: match_body, fields: fields}) when is_map(acc) do
     record
