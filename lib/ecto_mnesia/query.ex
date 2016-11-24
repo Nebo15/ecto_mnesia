@@ -19,7 +19,8 @@ defmodule Ecto.Mnesia.Query do
     |> Context.update_bindings(bindings)
 
     # TODO rename bindings to sources
-    # https://github.com/elixir-ecto/ecto/blob/8cddc211ac9423702faee8b5528a1b11474762d3/lib/ecto/adapters/postgres/connection.ex#L406
+    # https://github.com/elixir-ecto/ecto/blob/8cddc211ac9423702faee8b5528a1b11474762d3
+    # /lib/ecto/adapters/postgres/connection.ex#L406
 
     body = match_body(context, bindings)
 

@@ -54,6 +54,7 @@ end
 defmodule TestRepoMigrations do
   use Ecto.Migration
 
+  # Whenever you change this migration, don't forget to drop mnesia data directory to reset migrations history
   def change do
     create_if_not_exists table(:sell_offer) do
       add :trader_id,          :integer

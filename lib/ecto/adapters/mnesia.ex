@@ -13,7 +13,8 @@ defmodule Ecto.Adapters.Mnesia do
     * `:disc_copies` - store data in both RAM and on dics. Recommended value for most cases.
     * `:ram_copies` - store data only in RAM. Data will be lost on node restart.
     Useful when working with large datasets that don't need to be persisted.
-    * `:disc_only_copies` - store data only on dics. This will limit database size to 2GB and affect adapter performance.
+    * `:disc_only_copies` - store data only on dics. This will limit database size to 2GB and affect
+    adapter performance.
 
   ## Limitations
 

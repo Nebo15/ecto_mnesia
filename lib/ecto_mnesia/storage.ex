@@ -55,6 +55,9 @@ defmodule Ecto.Mnesia.Storage do
     end
   end
 
+  @doc """
+  Temporarily stops Mnesia, deletes schema and then brings it back up again.
+  """
   def storage_down(config) do
     config = conf(config)
     stop()
@@ -62,7 +65,7 @@ defmodule Ecto.Mnesia.Storage do
     start()
   end
 
-  defp conf(config) do
+  def conf(config \\ []) do
     [
       host: config[:host] || @defaults[:host],
       dir: config[:dir] || @defaults[:dir],
