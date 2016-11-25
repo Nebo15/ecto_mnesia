@@ -252,9 +252,11 @@ defmodule Ecto.Mnesia.Adapter do
   defp get_limit(%Ecto.Query.QueryExpr{expr: limit}), do: limit
 
   # Required methods for Ecto type casing
+  def loaders({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.load_embed(primitive, &1)]
   def loaders(:binary_id, type), do: [Ecto.UUID, type]
   def loaders(primitive, _type), do: [primitive]
 
+  def dumpers({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.dump_embed(primitive, &1)]
   def dumpers(:binary_id, type), do: [type, Ecto.UUID]
   def dumpers(primitive, _type), do: [primitive]
 end

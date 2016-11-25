@@ -27,7 +27,10 @@ defmodule SellOffer do
     field :loan_oap,           :decimal
     field :loan_status,        :string
     field :loan_changes,       {:array, :string}
-    field :application,        :map
+    embeds_one :application, Application, primary_key: false, on_replace: :update do
+      field :name, :string
+      field :surname, :string
+    end
 
     timestamps()
   end
