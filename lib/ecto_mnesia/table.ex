@@ -155,19 +155,23 @@ defmodule Ecto.Mnesia.Table do
   # and returns in a transactional context
   defp activity(context, fun) do
     try do
-      case Mnesia.activity(context, fun) do
-        {:aborted, :rollback} -> :rollback
-        {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
-        {:aborted, reason} -> {:error, reason}
-        {:atomic, reason} -> reason
-        result -> result
-      end
+      do_activity(context, fun)
     catch
       :exit, {:aborted, :rollback} -> :rollback
       :exit, {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
       :exit, {:aborted, {:no_exists, schema}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
       :exit, {:aborted, reason} -> {:error, reason}
       :exit, reason -> raise ErlangError.normalize(reason, :erlang.get_stacktrace)
+    end
+  end
+
+  defp do_activity(context, fun) do
+    case Mnesia.activity(context, fun) do
+      {:aborted, :rollback} -> :rollback
+      {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
+      {:aborted, reason} -> {:error, reason}
+      {:atomic, reason} -> reason
+      result -> result
     end
   end
 
