@@ -170,7 +170,7 @@ defmodule Ecto.Mnesia.QueryTest do
 
   describe "subqueries" do
     test "is not supported" do
-      assert_raise Ecto.Query.CompileError, "Subqueries is not supported by Mnesia adapter.", fn ->
+      assert_raise Ecto.Query.CompileError, "`Ecto.Query.subquery/1` is not supported by Mnesia adapter.", fn ->
         ms(subquery("sell_offer"))
       end
     end
@@ -178,7 +178,7 @@ defmodule Ecto.Mnesia.QueryTest do
 
   describe "having" do
     test "is not supported" do
-      assert_raise Ecto.Query.CompileError, "Havings is not supported by Mnesia adapter.", fn ->
+      assert_raise Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter.", fn ->
         ms(from(p in "sell_offer") |> having(status: "foo"))
       end
     end

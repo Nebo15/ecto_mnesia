@@ -10,9 +10,9 @@ defmodule Ecto.Mnesia.Query do
   alias Ecto.Mnesia.Record.Context
 
   def match_spec(%Ecto.SubQuery{}, _context, _sources),
-    do: raise Ecto.Query.CompileError, "Subqueries is not supported by Mnesia adapter."
+    do: raise Ecto.Query.CompileError, "`Ecto.Query.subquery/1` is not supported by Mnesia adapter."
   def match_spec(%Ecto.Query{havings: havings}, _context, _sources) when is_list(havings) and length(havings) > 0,
-    do: raise Ecto.Query.CompileError, "Havings is not supported by Mnesia adapter."
+    do: raise Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter."
   def match_spec(%Ecto.Query{} = query, %Context{} = context, sources) when is_list(sources) do
     context = context
     |> Context.update_select(query)
