@@ -320,6 +320,23 @@ defmodule Ecto.Adapters.MnesiaTest do
     end
   end
 
+  describe "supports embeds" do
+    setup do
+      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11, application: %SellOffer.Application{name: "John"}}
+      |> TestRepo.insert
+
+      %{loan1: loan1}
+    end
+
+    test "limits result" do
+      result = TestRepo.all from so in SellOffer,
+        limit: 1
+
+      assert [%SellOffer{application: %SellOffer.Application{name: "John"}}] = result
+      assert 1 == length(result)
+    end
+  end
+
   describe "query limit" do
     setup do
       {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}

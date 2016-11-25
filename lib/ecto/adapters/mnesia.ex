@@ -53,15 +53,15 @@ defmodule Ecto.Adapters.Mnesia do
   @doc false
   defdelegate prepare(operation, query), to: @adapter_implementation
   @doc false
-  defdelegate execute(repo, instruction, cache, sources, preprocess, opts), to: @adapter_implementation
+  defdelegate execute(repo, query_meta, query_cache, sources, preprocess, opts), to: @adapter_implementation
   @doc false
-  defdelegate insert(repo, instruction, sources, on_conflict, returning, opts), to: @adapter_implementation
+  defdelegate insert(repo, query_meta, sources, on_conflict, returning, opts), to: @adapter_implementation
   @doc false
-  defdelegate insert_all(repo, instruction, header, rows, on_conflict, returning, opts), to: @adapter_implementation
+  defdelegate insert_all(repo, query_meta, header, rows, on_conflict, returning, opts), to: @adapter_implementation
   @doc false
-  defdelegate update(repo, instruction, params, filter, autogen, opts), to: @adapter_implementation
+  defdelegate update(repo, query_meta, params, filter, autogen, opts), to: @adapter_implementation
   @doc false
-  defdelegate delete(repo, instruction, filter, opts), to: @adapter_implementation
+  defdelegate delete(repo, query_meta, filter, opts), to: @adapter_implementation
   @doc false
   def stream(_, _, _, _, _, _),
     do: raise ArgumentError, "stream/6 is not supported by adapter, use Ecto.Mnesia.Table.Stream.new/2 instead"
@@ -76,9 +76,9 @@ defmodule Ecto.Adapters.Mnesia do
   @doc false
   defdelegate autogenerate(type), to: @adapter_implementation
   @doc false
-  defdelegate loaders(type, value), to: @adapter_implementation
+  defdelegate loaders(primitive, type), to: @adapter_implementation
   @doc false
-  defdelegate dumpers(type, value), to: @adapter_implementation
+  defdelegate dumpers(primitive, type), to: @adapter_implementation
 
   # Storage behaviour for migrations
   @behaviour Ecto.Adapter.Storage
