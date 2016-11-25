@@ -29,32 +29,40 @@ defmodule Ecto.Mnesia.Record.Context do
   end
 
   @doc """
-  Stores `Ecto.Query.select` value into `context.select` field.
+  Assigns `Ecto.Query` to a context and rebuilds MatchSpec with updated data.
   """
-  def update_query_select(context, nil),
+  def assign_query(_conext, %Ecto.SubQuery{}, _sources),
+    do: raise Ecto.Query.CompileError, "`Ecto.Query.subquery/1` is not supported by Mnesia adapter."
+  def assign_query(_context, %Ecto.Query{havings: havings}, _sources) when is_list(havings) and length(havings) > 0,
+    do: raise Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter."
+  def assign_query(context, %Ecto.Query{} = query, sources) do
+    context
+    |> update_query_select(query)
+    |> update_query_sources(sources)
+    |> build_match_spec(query)
+  end
+
+  # Stores `Ecto.Query.select` value into `context.select` field.
+  defp update_query_select(context, nil),
     do: context
-  def update_query_select(context, %Ecto.Query{select: select}),
+  defp update_query_select(context, %Ecto.Query{select: select}),
     do: update_query_select(context, select)
-  def update_query_select(context, select),
+  defp update_query_select(context, select),
     do: %{context | query: %{context.query | select: select}}
 
-  @doc """
-  Stores MatchSpec query body into `context.match_body` field.
-  """
-  def update_match_spec_body(context, match_body),
-    do: %{context | match_spec: %{context.match_spec | body: match_body}}
-
-  @doc """
-  Stores query sources `context.sources` field.
-  """
-  def update_query_sources(context, sources),
+  # Stores query sources `context.sources` field.
+  defp update_query_sources(context, sources),
     do: %{context | query: %{context.query | sources: sources}}
 
   @doc """
   Returns match spec that can be used in `:mnesia.select/3`.
   """
   def get_match_spec(%Context{match_spec: %Context.MatchSpec{} = match_spec}),
-    do: match_spec.dump()
+    do: Context.MatchSpec.dump(match_spec)
+
+  # Builds new match_spec on query updates
+  defp build_match_spec(context, query),
+    do: context |> Context.MatchSpec.update(query)
 
   @doc """
   Returns MatchSpec record field index by a `field` name.

@@ -40,7 +40,7 @@ defmodule Ecto.Adapters.Mnesia do
   """
   require Logger
   alias :mnesia, as: Mnesia
-  alias Ecto.Mnesia.{Record, MatchSpec, Table}
+  alias Ecto.Mnesia.{Record, Table}
   alias Ecto.Mnesia.Record.{Context, Ordering, Update}
 
   @behaviour Ecto.Adapter
@@ -86,8 +86,9 @@ defmodule Ecto.Adapters.Mnesia do
   # Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:all, %Ecto.Query{} = query, limit, context, ordering_fn}},
-                      params, _preprocess, _opts) do
-    {context, match_spec} = MatchSpec.match_spec(query, context, params)
+                      sources, _preprocess, _opts) do
+    context = context |> Context.assign_query(query, sources)
+    match_spec = Context.get_match_spec(context)
     Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     result = table
@@ -101,8 +102,9 @@ defmodule Ecto.Adapters.Mnesia do
   # Deletes all records that match Ecto.Query
   def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:delete_all, %Ecto.Query{} = query, limit, context, ordering_fn}},
-                      params, _preprocess, opts) do
-    {context, match_spec} = MatchSpec.match_spec(query, context, params)
+                      sources, _preprocess, opts) do
+    context = context |> Context.assign_query(query, sources)
+    match_spec = Context.get_match_spec(context)
     Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     table = table |> Table.get_name()
@@ -120,8 +122,9 @@ defmodule Ecto.Adapters.Mnesia do
   # Update all records
   def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, limit, context, ordering_fn}},
-                      params, _preprocess, opts) do
-    {context, match_spec} = MatchSpec.match_spec(query, context, params)
+                      sources, _preprocess, opts) do
+    context = context |> Context.assign_query(query, sources)
+    match_spec = Context.get_match_spec(context)
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     table = table |> Table.get_name()
@@ -130,7 +133,7 @@ defmodule Ecto.Adapters.Mnesia do
       |> Table.select(match_spec, limit)
       |> Enum.map(fn record ->
         update = record
-        |> Update.update_record(updates, params, context)
+        |> Update.update_record(updates, sources, context)
         |> List.insert_at(0, table)
         |> List.to_tuple()
 
@@ -160,9 +163,9 @@ defmodule Ecto.Adapters.Mnesia do
 
   @doc false
   # Insert Ecto Schema struct to Mnesia database.
-  def insert(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}}, params,
+  def insert(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}}, sources,
              _on_conflict, _returning, _opts) do
-    do_insert(table, schema, autogenerate_id, params)
+    do_insert(table, schema, autogenerate_id, sources)
   end
 
   @doc false

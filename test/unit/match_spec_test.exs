@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.MatchSpecTest do
+defmodule Ecto.Mnesia.Context.MatchSpecTest do
   use ExUnit.Case, async: true
   require Logger
   import Ecto.Query
@@ -10,19 +10,16 @@ defmodule Ecto.Mnesia.MatchSpecTest do
   @age_field_id :"$12"
 
   defp ms({%Ecto.SubQuery{} = query, args}) do
-    context = "sell_offer"
+    "sell_offer"
     |> Context.new(SellOffer)
-
-    {_context, spec} = Ecto.Mnesia.MatchSpec.match_spec(query, context, args)
-    spec
+    |> Context.assign_query(query, args)
+    |> Context.get_match_spec()
   end
   defp ms({%Ecto.Query{} = query, args}) do
-    context = "sell_offer"
+    "sell_offer"
     |> Context.new(SellOffer)
-    |> Context.update_query_select(query.select)
-
-    {_context, spec} = Ecto.Mnesia.MatchSpec.match_spec(query, context, args)
-    spec
+    |> Context.assign_query(query, args)
+    |> Context.get_match_spec()
   end
   defp ms(query), do: ms({query, []})
 

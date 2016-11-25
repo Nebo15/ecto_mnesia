@@ -1,8 +1,7 @@
 defmodule Ecto.Mnesia.Record.Update do
   @moduledoc """
-  This module decodes `query.updates` field (from `Ecto.Query`) and applies all changes on a Mnesia record.
+  This module decodes `query.updates` AST (from `Ecto.Query`) and applies all changes on a Mnesia record.
   """
-  alias Ecto.Mnesia.MatchSpec
   alias Ecto.Mnesia.Record.Context
 
   @doc """
@@ -31,7 +30,7 @@ defmodule Ecto.Mnesia.Record.Update do
 
   defp apply_condition(record, {:set, {field, expr}}, sources, context) do
     index = Context.find_field_index!(field, context)
-    value = MatchSpec.condition_expression(expr, sources, context)
+    value = Context.MatchSpec.condition_expression(expr, sources, context)
 
     record
     |> List.replace_at(index, value)
@@ -39,7 +38,7 @@ defmodule Ecto.Mnesia.Record.Update do
 
   defp apply_condition(record, {:inc, {field, expr}}, sources, context) do
     index = Context.find_field_index!(field, context)
-    value = MatchSpec.condition_expression(expr, sources, context)
+    value = Context.MatchSpec.condition_expression(expr, sources, context)
 
     record
     |> List.update_at(index, fn

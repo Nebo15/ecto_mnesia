@@ -3,7 +3,6 @@ defmodule Ecto.Mnesia.Record do
   This module provides set of helpers for conversions between Mnesia records and Ecto Schemas.
   """
   alias Ecto.Mnesia.Record.Context
-  alias Ecto.Mnesia.MatchSpec
   alias Ecto.Mnesia.Table
 
   @doc """
@@ -69,7 +68,7 @@ defmodule Ecto.Mnesia.Record do
   end
 
   defp reduce_list({:^, _, _} = source, {field_index, acc}, _record, sources) do
-    field_value = source |> MatchSpec.unbind(sources)
+    field_value = source |> Context.MatchSpec.unbind(sources)
     {field_index + 1, acc ++ [field_value]}
   end
 
@@ -77,7 +76,7 @@ defmodule Ecto.Mnesia.Record do
     field_placeholder = match_body |> Enum.at(field_index)
 
     field_name = fields
-    |> MatchSpec.condition_expression([], %{}) # Dump field name from expression
+    |> Context.MatchSpec.condition_expression([], %{}) # Dump field name from expression
     |> Enum.find_value(fn
       {field_name, {_, ^field_placeholder}} -> field_name
       _ -> nil
