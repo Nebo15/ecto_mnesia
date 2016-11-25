@@ -47,8 +47,25 @@ defmodule Ecto.Mnesia.Record.Update do
     end)
   end
 
-  defp apply_condition(_record, {:push, _}, _sources, _context),
-    do: raise ArgumentError, ":push updates is not supported by the adapter"
-  defp apply_condition(_record, {:pull, _}, _sources, _context),
-    do: raise ArgumentError, ":pull updates is not supported by the adapter"
+  defp apply_condition(record, {:push, {field, expr}}, sources, context) do
+    index = Context.find_field_index!(field, context)
+    value = Context.MatchSpec.condition_expression(expr, sources, context)
+
+    record
+    |> List.update_at(index, fn
+      list when is_list(list) -> list ++ [value]
+      nil -> [value]
+    end)
+  end
+
+  defp apply_condition(record, {:pull, {field, expr}}, sources, context) do
+    index = Context.find_field_index!(field, context)
+    value = Context.MatchSpec.condition_expression(expr, sources, context)
+
+    record
+    |> List.update_at(index, fn
+      list when is_list(list) -> Enum.filter(list, &(&1 != value))
+      nil -> []
+    end)
+  end
 end

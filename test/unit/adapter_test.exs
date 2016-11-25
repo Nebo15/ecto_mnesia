@@ -103,7 +103,7 @@ defmodule Ecto.Adapters.MnesiaTest do
 
   describe "update" do
     setup do
-      {:ok, loan} = %SellOffer{loan_id: "hello"}
+      {:ok, loan} = %SellOffer{loan_id: "hello", loan_changes: ["old_application"]}
       |> TestRepo.insert
 
       %{loan: loan}
@@ -138,6 +138,20 @@ defmodule Ecto.Adapters.MnesiaTest do
       |> TestRepo.insert
 
       refute [] == res_changeset.errors
+    end
+
+    test "with :push" do
+      query = from so in SellOffer, update: [push: [loan_changes: "new_application"]]
+
+      assert {1, nil} == query |> TestRepo.update_all([])
+      assert [%SellOffer{loan_changes: ["old_application", "new_application"]}] = TestRepo.all(SellOffer)
+    end
+
+    test "with :pull" do
+      query = from so in SellOffer, update: [pull: [loan_changes: "old_application"]]
+
+      assert {1, nil} == query |> TestRepo.update_all([])
+      assert [%SellOffer{loan_changes: []}] = TestRepo.all(SellOffer)
     end
   end
 

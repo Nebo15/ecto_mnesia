@@ -26,8 +26,8 @@ defmodule SellOffer do
     field :loan_currency,      :string
     field :loan_oap,           :decimal
     field :loan_status,        :string
-    field :loan_apr,           :decimal
-    field :loan_is_prolonged,  :boolean
+    field :loan_changes,       {:array, :string}
+    field :application,        :map
 
     timestamps()
   end
@@ -78,8 +78,8 @@ defmodule TestRepoMigrations do
       add :loan_currency,      :string
       add :loan_oap,           :decimal
       add :loan_status,        :string
-      add :loan_apr,           :decimal
-      add :loan_is_prolonged,  :boolean
+      add :loan_changes,       :array
+      add :application,        :map
 
       timestamps()
     end
