@@ -75,6 +75,13 @@ It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be ins
     end
     ```
 
+  3. Use `Ecto.Adapters.Mnesia` as your `Ecto.Repo` adapter:
+
+    ```elixir
+    config :my_app, MyRepo,
+      adapter: Ecto.Adapters.Mnesia
+    ```
+
 The docs can be found at [https://hexdocs.pm/ecto_mnesia](https://hexdocs.pm/ecto_mnesia).
 
 ## Thanks
