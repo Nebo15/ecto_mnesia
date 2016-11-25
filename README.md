@@ -10,11 +10,11 @@ Supported features:
 - Automatically converts `Ecto.Query` structs to Erlang `match_spec`. Also adapter emulates `query.select` and `query.order_bys` behaviors, even trough Mnesia itself does not support them.
 - Auto-generated (via sequence table) `:id` primary keys.
 - Migrations and database setup via `Ecto.Migrations`.
-- Transactions in dirty context.
+- Transactions.
+- Secondary indexes.
 
 Planned features:
 
-- Secondary indexes.
 - Native primary key and unique index constraints.
 - Custom primary keys.
 - Other transactional contexts.
