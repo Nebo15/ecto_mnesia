@@ -56,7 +56,7 @@ defmodule TestRepoMigrations do
 
   # Whenever you change this migration, don't forget to drop mnesia data directory to reset migrations history
   def change do
-    create_if_not_exists table(:sell_offer) do
+    create_if_not_exists table(:sell_offer, engine: :set) do
       add :trader_id,          :integer
       add :loan_id,            :string
       add :book_value,         :integer

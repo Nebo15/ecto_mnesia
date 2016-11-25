@@ -9,20 +9,20 @@ defmodule Ecto.Mnesia.Storage.Migrator do
 
   @doc false
   # Tables
-  def execute(repo, {:create, %Ecto.Migration.Table{name: table}, instructions}, _opts) do
+  def execute(repo, {:create, %Ecto.Migration.Table{name: table, engine: type}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
     new_attrs = instructions
     |> Enum.reduce([], &reduce_fields(&1, &2, [], :skip))
     |> Enum.uniq()
 
-    case do_create_table(repo, table, new_attrs) do
+    case do_create_table(repo, table, type, new_attrs) do
       :ok -> :ok
       :already_exists -> raise "Table #{table} already exists"
     end
   end
 
-  def execute(repo, {:create_if_not_exists, %Ecto.Migration.Table{name: table}, instructions}, _opts) do
+  def execute(repo, {:create_if_not_exists, %Ecto.Migration.Table{name: table, engine: type}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
     table_attrs = try do
@@ -35,7 +35,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, [], :skip))
     |> Enum.uniq()
 
-    case do_create_table(repo, table, new_attrs) do
+    case do_create_table(repo, table, type, new_attrs) do
       :ok -> :ok
       :already_exists -> :ok
     end
@@ -128,15 +128,19 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   end
 
   # Helpers
-  defp do_create_table(repo, table, attributes) do
+  defp do_create_table(repo, table, type, attributes) do
     config = conf(repo)
-    case Mnesia.create_table(table, [{:attributes, attributes}, {config[:storage_type], [config[:host]]}]) do
+    tab_def = [{:attributes, attributes}, {config[:storage_type], [config[:host]]}, {:type, get_engine(type)}]
+    case Mnesia.create_table(table, tab_def) do
       {:atomic, :ok} ->
         Mnesia.wait_for_tables([table], 1_000)
         :ok
       {:aborted, {:already_exists, ^table}} -> :already_exists
     end
   end
+
+  defp get_engine(nil), do: :set
+  defp get_engine(type) when is_atom(type), do: type
 
   defp reduce_fields({:add, field, _type, _opts}, fields, table_fields, on_duplicate) do
     if on_duplicate == :raise and field_exists?(table_fields, field) do
@@ -194,7 +198,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
 
     case res do
       :no_exists ->
-        do_create_table(repo, @pk_table_name, [:thing, :id])
+        do_create_table(repo, @pk_table_name, :set, [:thing, :id])
       _ ->
         Mnesia.wait_for_tables([@pk_table_name], 1_000)
         :ok

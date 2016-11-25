@@ -55,6 +55,44 @@ If you want to know more how this tool works take look at [Confex](https://githu
   - `:ram_copies` - store data only in RAM. Data will be lost on node restart. Useful when working with large datasets that don't need to be persisted.
   - `:disc_only_copies` - store data only on dics. This will limit database size to 2GB and affect adapter performance.
 
+#### Table Types (Engines)
+
+  In migrations you can select which kind of table you want to use:
+
+    ```elixir
+    create_if_not_exists table(:my_table, engine: :set) do
+      ...
+    end
+    ```
+
+  Supported types:
+
+  - `:set` - default type. Expected your records to have at least one unique rprimary key that **should be in first column**.
+  - `:ordered_set` - same as `:set`, but Mnesia will store data in a table will be ordered by primary key.
+  - `:bag` - expected all records to be unique, but no primary key is required. (Internally, it will use first field as a primary key).
+
+##### Ordered Set Performance
+
+  Ordered set comes in a cost of increased complexity of write operations:
+
+  **Set**
+
+  | Operation | Average | Worst Case |
+  |:---------:|:-------:|:----------:|
+  | Space     | O(n)    | O(n)       |
+  | Search    | O(1)    | O(n)       |
+  | Insert    | O(1)    | O(n)       |
+  | Delete    | O(1)    | O(n)       |
+
+  **Ordered Set**
+
+  | Operation | Average  | Worst Case |
+  |:---------:|:--------:|:----------:|
+  | Space     | O(n)     | O(n)       |
+  | Search    | O(log n) | O(n)       |
+  | Insert    | O(log n) | O(n)       |
+  | Delete    | O(log n) | O(n)       |
+
 ## Installation
 
 It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be installed as:
