@@ -82,8 +82,6 @@ defmodule Ecto.Mnesia.Record.Context do
 
   Raises if field is not found in a context.
   """
-  def find_field_placeholder!({{:., [], [{:&, [], [0]}, field]}, _, []}, %Context{} = context) when is_atom(field),
-    do: field |> find_field_placeholder!(context)
   def find_field_placeholder!(field, %Context{table: %Context.Table{structure: structure, name: name}})
     when is_atom(field) do
     case Keyword.get(structure, field) do

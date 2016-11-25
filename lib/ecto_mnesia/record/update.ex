@@ -44,7 +44,6 @@ defmodule Ecto.Mnesia.Record.Update do
     |> List.update_at(index, fn
       numeric when is_number(numeric) or is_float(numeric) -> numeric + value
       nil -> value
-      _ -> raise ArgumentError, "Can not increment field `#{inspect field}` value, because it's not numeric"
     end)
   end
 
