@@ -140,9 +140,9 @@ defmodule Ecto.Mnesia.Table do
   Make sure that you don't run any code that can have side-effects inside a transactions,
   because it may be run dozens of times.
 
-  By default, context is `:async_dirty`.
+  By default, context is `:transaction`.
   """
-  def transaction(fun, context \\ :async_dirty) do
+  def transaction(fun, context \\ :transaction) do
     case Mnesia.is_transaction() do
       true ->
         fun.()
@@ -165,6 +165,7 @@ defmodule Ecto.Mnesia.Table do
     catch
       :exit, {:aborted, :rollback} -> :rollback
       :exit, {:aborted, {:no_exists, [schema, _id]}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
+      :exit, {:aborted, {:no_exists, schema}} -> raise RuntimeError, "Schema #{inspect schema} does not exist"
       :exit, {:aborted, reason} -> {:error, reason}
       :exit, reason -> raise ErlangError.normalize(reason, :erlang.get_stacktrace)
     end
