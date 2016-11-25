@@ -77,21 +77,21 @@ If you want to know more how this tool works take look at [Confex](https://githu
 
   **Set**
 
-  | Operation | Average | Worst Case |
-  |:---------:|:-------:|:----------:|
-  | Space     | O(n)    | O(n)       |
-  | Search    | O(1)    | O(n)       |
-  | Insert    | O(1)    | O(n)       |
-  | Delete    | O(1)    | O(n)       |
+  Operation | Average | Worst Case
+  ---------|-------|----------
+  Space     | O(n)    | O(n)
+  Search    | O(1)    | O(n)
+  Insert    | O(1)    | O(n)
+  Delete    | O(1)    | O(n)
 
   **Ordered Set**
 
-  | Operation | Average  | Worst Case |
-  |:---------:|:--------:|:----------:|
-  | Space     | O(n)     | O(n)       |
-  | Search    | O(log n) | O(n)       |
-  | Insert    | O(log n) | O(n)       |
-  | Delete    | O(log n) | O(n)       |
+  Operation | Average  | Worst Case
+  ---------|--------|----------
+  Space     | O(n)     | O(n)
+  Search    | O(log n) | O(n)
+  Insert    | O(log n) | O(n)
+  Delete    | O(log n) | O(n)
 
 ## Installation
 
