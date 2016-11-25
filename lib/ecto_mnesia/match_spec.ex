@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Query do
+defmodule Ecto.Mnesia.MatchSpec do
   @moduledoc """
   This module converts Ecto.Query AST to MatchSpec.
 
@@ -15,37 +15,37 @@ defmodule Ecto.Mnesia.Query do
     do: raise Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter."
   def match_spec(%Ecto.Query{} = query, %Context{} = context, sources) when is_list(sources) do
     context = context
-    |> Context.update_select(query)
-    |> Context.update_sources(sources)
+    |> Context.update_query_select(query)
+    |> Context.update_query_sources(sources)
 
     body = match_body(context, sources)
 
     # Save placeholders in context so we will know how to extract result data
     context = context
-    |> Context.update_match_body(body)
+    |> Context.update_match_spec_body(body)
 
     {context, [{match_head(context), match_conditions(query, sources, context), [body]}]}
   end
 
   # Build match_spec head part (data placeholders)
-  defp match_head(%Context{table: table} = context) do
+  defp match_head(%Context{table: %Context.Table{name: table_name}} = context) do
     context
-    |> Context.get_placeholders()
-    |> Enum.into([table])
+    |> Context.get_fields_placeholders()
+    |> Enum.into([table_name])
     |> List.to_tuple()
   end
 
   # Select was present
-  defp match_body(%Context{select: %Ecto.Query.SelectExpr{fields: expr}} = context, sources) do
+  defp match_body(%Context{query: %Context.Query{select: %Ecto.Query.SelectExpr{fields: expr}}} = context, sources) do
     expr
     |> select_fields(sources)
-    |> Enum.map(&Context.find_placeholder!(&1, context))
+    |> Enum.map(&Context.find_field_placeholder!(&1, context))
   end
 
   # Select wasn't present, so we select everything
-  defp match_body(%Context{select: select} = context, _sources) when is_list(select) do
+  defp match_body(%Context{query: %Context.Query{select: select}} = context, _sources) when is_list(select) do
     select
-    |> Enum.map(&Context.find_placeholder!(&1, context))
+    |> Enum.map(&Context.find_field_placeholder!(&1, context))
   end
 
   defp select_fields({:&, [], [0, fields, _]}, _sources), do: fields
@@ -103,7 +103,7 @@ defmodule Ecto.Mnesia.Query do
 
   # Fields
   def condition_expression({{:., [], [{:&, [], [0]}, field]}, _, []}, _sources, context) do
-    Context.find_placeholder!(field, context)
+    Context.find_field_placeholder!(field, context)
   end
 
   # Recursively expand ecto query expressions and build conditions

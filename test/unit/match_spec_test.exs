@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.QueryTest do
+defmodule Ecto.Mnesia.MatchSpecTest do
   use ExUnit.Case, async: true
   require Logger
   import Ecto.Query
@@ -13,15 +13,15 @@ defmodule Ecto.Mnesia.QueryTest do
     context = "sell_offer"
     |> Context.new(SellOffer)
 
-    {_context, spec} = Ecto.Mnesia.Query.match_spec(query, context, args)
+    {_context, spec} = Ecto.Mnesia.MatchSpec.match_spec(query, context, args)
     spec
   end
   defp ms({%Ecto.Query{} = query, args}) do
     context = "sell_offer"
     |> Context.new(SellOffer)
-    |> Context.update_select(query.select)
+    |> Context.update_query_select(query.select)
 
-    {_context, spec} = Ecto.Mnesia.Query.match_spec(query, context, args)
+    {_context, spec} = Ecto.Mnesia.MatchSpec.match_spec(query, context, args)
     spec
   end
   defp ms(query), do: ms({query, []})

@@ -40,7 +40,7 @@ defmodule Ecto.Adapters.Mnesia do
   """
   require Logger
   alias :mnesia, as: Mnesia
-  alias Ecto.Mnesia.{Record, Query, Table}
+  alias Ecto.Mnesia.{Record, MatchSpec, Table}
   alias Ecto.Mnesia.Record.{Context, Ordering, Update}
 
   @behaviour Ecto.Adapter
@@ -87,7 +87,7 @@ defmodule Ecto.Adapters.Mnesia do
   def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:all, %Ecto.Query{} = query, limit, context, ordering_fn}},
                       params, _preprocess, _opts) do
-    {context, match_spec} = Query.match_spec(query, context, params)
+    {context, match_spec} = MatchSpec.match_spec(query, context, params)
     Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     result = table
@@ -102,7 +102,7 @@ defmodule Ecto.Adapters.Mnesia do
   def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:delete_all, %Ecto.Query{} = query, limit, context, ordering_fn}},
                       params, _preprocess, opts) do
-    {context, match_spec} = Query.match_spec(query, context, params)
+    {context, match_spec} = MatchSpec.match_spec(query, context, params)
     Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     table = table |> Table.get_name()
@@ -121,7 +121,7 @@ defmodule Ecto.Adapters.Mnesia do
   def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
                       {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, limit, context, ordering_fn}},
                       params, _preprocess, opts) do
-    {context, match_spec} = Query.match_spec(query, context, params)
+    {context, match_spec} = MatchSpec.match_spec(query, context, params)
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     table = table |> Table.get_name()

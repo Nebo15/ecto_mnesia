@@ -23,8 +23,6 @@ defmodule Ecto.Mnesia.Storage do
   """
   def stop, do: Mnesia.stop
 
-  # TODO: Support ram-only storage creation and migrations
-
   @doc """
   Creates the storage given by options.
 
@@ -49,6 +47,7 @@ defmodule Ecto.Mnesia.Storage do
 
     Mnesia.change_table_copy_type(:schema, config[:host], config[:storage_type])
 
+    IO.puts "==> Ensuring Mnesia schema exists"
     case Mnesia.create_schema([config[:host]]) do
       {:error, {_, {:already_exists, _}}} -> {:error, :already_up}
       :ok -> :ok

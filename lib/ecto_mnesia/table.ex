@@ -10,7 +10,11 @@ defmodule Ecto.Mnesia.Table do
   def insert(table, record, _opts \\ []) when is_tuple(record) do
     table = table |> get_name()
     transaction(fn ->
-      _insert(table, record)
+      key = record |> elem(1)
+      case _get(table, key) do
+        nil -> _insert(table, record)
+        _ -> {:error, :already_exists}
+      end
     end)
   end
 
@@ -112,7 +116,13 @@ defmodule Ecto.Mnesia.Table do
   Get list of attributes that defined in Mnesia schema.
   """
   def attributes(table) do
-    table |> get_name() |> Mnesia.table_info(:attributes)
+    try do
+      name = table |> get_name() |> Mnesia.table_info(:attributes)
+      {:ok, name}
+    catch
+      :exit, {:aborted, {:no_exists, _, :attributes}} ->
+        {:error, :no_exists}
+    end
   end
 
   @doc """
