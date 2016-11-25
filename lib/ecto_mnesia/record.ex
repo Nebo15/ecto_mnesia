@@ -40,9 +40,9 @@ defmodule Ecto.Mnesia.Record do
     |> List.wrap()
   end
 
-  defp do_transform([], record, %Context{select: %{fields: select_fields}, bindings: bindings}) do
+  defp do_transform([], record, %Context{select: %{fields: select_fields}, sources: sources}) do
     select_fields
-    |> Enum.reduce({0, []}, &reduce_list(&1, &2, record, bindings))
+    |> Enum.reduce({0, []}, &reduce_list(&1, &2, record, sources))
     |> elem(1)
     |> List.wrap()
   end
@@ -53,14 +53,14 @@ defmodule Ecto.Mnesia.Record do
     {field_index + 1, struct}
   end
 
-  defp reduce_list({{:., [], [{:&, [], [0]}, _field_name]}, _, []}, {field_index, acc}, record, _bindings)
+  defp reduce_list({{:., [], [{:&, [], [0]}, _field_name]}, _, []}, {field_index, acc}, record, _sources)
     when is_list(acc) do
     field_value = record |> Enum.at(field_index)
     {field_index + 1, acc ++ [field_value]}
   end
 
-  defp reduce_list({:^, _, _} = binding, {field_index, acc}, _record, bindings) do
-    field_value = binding |> Query.unbind(bindings)
+  defp reduce_list({:^, _, _} = source, {field_index, acc}, _record, sources) do
+    field_value = source |> Query.unbind(sources)
     {field_index + 1, acc ++ [field_value]}
   end
 

@@ -9,26 +9,22 @@ defmodule Ecto.Mnesia.Query do
   require Logger
   alias Ecto.Mnesia.Record.Context
 
-  def match_spec(%Ecto.SubQuery{}, _context, _bindings),
+  def match_spec(%Ecto.SubQuery{}, _context, _sources),
     do: raise Ecto.Query.CompileError, "Subqueries is not supported by Mnesia adapter."
-  def match_spec(%Ecto.Query{havings: havings}, _context, _bindings) when is_list(havings) and length(havings) > 0,
+  def match_spec(%Ecto.Query{havings: havings}, _context, _sources) when is_list(havings) and length(havings) > 0,
     do: raise Ecto.Query.CompileError, "Havings is not supported by Mnesia adapter."
-  def match_spec(%Ecto.Query{} = query, %Context{} = context, bindings) when is_list(bindings) do
+  def match_spec(%Ecto.Query{} = query, %Context{} = context, sources) when is_list(sources) do
     context = context
     |> Context.update_select(query)
-    |> Context.update_bindings(bindings)
+    |> Context.update_sources(sources)
 
-    # TODO rename bindings to sources
-    # https://github.com/elixir-ecto/ecto/blob/8cddc211ac9423702faee8b5528a1b11474762d3
-    # /lib/ecto/adapters/postgres/connection.ex#L406
-
-    body = match_body(context, bindings)
+    body = match_body(context, sources)
 
     # Save placeholders in context so we will know how to extract result data
     context = context
     |> Context.update_match_body(body)
 
-    {context, [{match_head(context), match_conditions(query, bindings, context), [body]}]}
+    {context, [{match_head(context), match_conditions(query, sources, context), [body]}]}
   end
 
   # Build match_spec head part (data placeholders)
@@ -40,95 +36,95 @@ defmodule Ecto.Mnesia.Query do
   end
 
   # Select was present
-  defp match_body(%Context{select: %Ecto.Query.SelectExpr{fields: expr}} = context, bindings) do
+  defp match_body(%Context{select: %Ecto.Query.SelectExpr{fields: expr}} = context, sources) do
     expr
-    |> select_fields(bindings)
+    |> select_fields(sources)
     |> Enum.map(&Context.find_placeholder!(&1, context))
   end
 
   # Select wasn't present, so we select everything
-  defp match_body(%Context{select: select} = context, _bindings) when is_list(select) do
+  defp match_body(%Context{select: select} = context, _sources) when is_list(select) do
     select
     |> Enum.map(&Context.find_placeholder!(&1, context))
   end
 
-  defp select_fields({:&, [], [0, fields, _]}, _bindings), do: fields
-  defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, _bindings), do: [field]
-  defp select_fields({:^, [], [_]} = expr, bindings), do: [unbind(expr, bindings)]
-  defp select_fields(exprs, bindings) when is_list(exprs) do
+  defp select_fields({:&, [], [0, fields, _]}, _sources), do: fields
+  defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, _sources), do: [field]
+  defp select_fields({:^, [], [_]} = expr, sources), do: [unbind(expr, sources)]
+  defp select_fields(exprs, sources) when is_list(exprs) do
     exprs
-    |> Enum.flat_map(&select_fields(&1, bindings))
+    |> Enum.flat_map(&select_fields(&1, sources))
   end
 
   # Resolve params
-  defp match_conditions(%Ecto.Query{wheres: wheres}, bindings, context),
-    do: match_conditions(wheres, bindings, context, [])
-  defp match_conditions([], _bindings, _context, acc),
+  defp match_conditions(%Ecto.Query{wheres: wheres}, sources, context),
+    do: match_conditions(wheres, sources, context, [])
+  defp match_conditions([], _sources, _context, acc),
     do: acc
-  defp match_conditions([%{expr: expr, params: params} | tail], bindings, context, acc) do
-    condition = match_condition(expr, merge_bindings(bindings, params), context)
-    match_conditions(tail, bindings, context, [condition | acc])
+  defp match_conditions([%{expr: expr, params: params} | tail], sources, context, acc) do
+    condition = match_condition(expr, merge_sources(sources, params), context)
+    match_conditions(tail, sources, context, [condition | acc])
   end
 
   # `expr.params` seems to be always empty, but we need to deal with cases when it's not
-  defp merge_bindings(bindings1, bindings2) when is_list(bindings1) and is_list(bindings2), do: bindings1 ++ bindings2
-  defp merge_bindings(bindings, nil), do: bindings
+  defp merge_sources(sources1, sources2) when is_list(sources1) and is_list(sources2), do: sources1 ++ sources2
+  defp merge_sources(sources, nil), do: sources
 
   # `is_nil` is a special case when we need to :== with nil value
-  defp match_condition({:is_nil, [], [field]}, bindings, context) do
-    {:==, condition_expression(field, bindings, context), nil}
+  defp match_condition({:is_nil, [], [field]}, sources, context) do
+    {:==, condition_expression(field, sources, context), nil}
   end
 
   # `:in` is a special case when we need to expand it to multiple `:or`'s
-  defp match_condition({:in, [], [field, parameters]}, bindings, context) do
-    field = condition_expression(field, bindings, context)
+  defp match_condition({:in, [], [field, parameters]}, sources, context) do
+    field = condition_expression(field, sources, context)
 
     parameters
     |> Enum.map(fn parameter ->
-      {:==, field, condition_expression(parameter, bindings, context)}
+      {:==, field, condition_expression(parameter, sources, context)}
     end)
     |> List.insert_at(0, :or)
     |> List.to_tuple()
   end
 
   # Conditions that have one argument. Functions (is_nil, not).
-  defp match_condition({op, [], [field]}, bindings, context) do
-    {guard_function_operation(op), condition_expression(field, bindings, context)}
+  defp match_condition({op, [], [field]}, sources, context) do
+    {guard_function_operation(op), condition_expression(field, sources, context)}
   end
 
   # Other conditions with multiple arguments (<, >, ==, !=, etc)
-  defp match_condition({op, [], [field, parameter]}, bindings, context) do
+  defp match_condition({op, [], [field, parameter]}, sources, context) do
     {
       guard_function_operation(op),
-      condition_expression(field, bindings, context),
-      condition_expression(parameter, bindings, context)
+      condition_expression(field, sources, context),
+      condition_expression(parameter, sources, context)
     }
   end
 
   # Fields
-  def condition_expression({{:., [], [{:&, [], [0]}, field]}, _, []}, _bindings, context) do
+  def condition_expression({{:., [], [{:&, [], [0]}, field]}, _, []}, _sources, context) do
     Context.find_placeholder!(field, context)
   end
 
   # Recursively expand ecto query expressions and build conditions
-  def condition_expression({op, [], [left, right]}, bindings, context) do
+  def condition_expression({op, [], [left, right]}, sources, context) do
     {
       guard_function_operation(op),
-      condition_expression(left, bindings, context),
-      condition_expression(right, bindings, context)
+      condition_expression(left, sources, context),
+      condition_expression(right, sources, context)
     }
   end
 
   # Another part of this function is to use binded variables values
-  def condition_expression(%Ecto.Query.Tagged{value: value}, _bindings, _context), do: value
-  def condition_expression(raw_value, bindings, _context), do: unbind(raw_value, bindings)
+  def condition_expression(%Ecto.Query.Tagged{value: value}, _sources, _context), do: value
+  def condition_expression(raw_value, sources, _context), do: unbind(raw_value, sources)
 
-  def unbind({:^, [], [index]}, bindings) do
-    bindings
+  def unbind({:^, [], [index]}, sources) do
+    sources
     |> Enum.at(index)
     |> get_binded()
   end
-  def unbind(value, _bindings), do: value
+  def unbind(value, _sources), do: value
 
   # Binded variable value
   defp get_binded({value, {_, _}}), do: value

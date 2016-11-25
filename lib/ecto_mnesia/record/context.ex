@@ -5,7 +5,7 @@ defmodule Ecto.Mnesia.Record.Context do
   alias Ecto.Mnesia.Table
   alias Ecto.Mnesia.Record.Context
 
-  defstruct schema: nil, table: nil, fields: [], select: [], match_body: nil, bindings: []
+  defstruct schema: nil, table: nil, fields: [], select: [], match_body: nil, sources: []
 
   @doc """
   Creates new context table, and stores schema meta information that can be used to reconstruct query result.
@@ -39,9 +39,9 @@ defmodule Ecto.Mnesia.Record.Context do
   def update_match_body(context, match_body), do: %{context | match_body: match_body}
 
   @doc """
-  Stores query bindings `context.bindings` field.
+  Stores query sources `context.sources` field.
   """
-  def update_bindings(context, bindings), do: %{context | bindings: bindings}
+  def update_sources(context, sources), do: %{context | sources: sources}
 
   def find_index!(field, %Context{fields: fields, table: table}) when is_atom(field) do
     case Keyword.get(fields, field) do

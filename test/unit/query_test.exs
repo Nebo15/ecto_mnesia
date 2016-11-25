@@ -34,7 +34,7 @@ defmodule Ecto.Mnesia.QueryTest do
       query = from(so in "sell_offer") |> where(status: ^status)
       assert [{_, [{:==, @status_field_id, ^status}], _}] = ms(query)
 
-      # Multiple bindings
+      # Multiple sources
       query = from(so in "sell_offer") |> where(status: ^status, age: ^age)
       assert [{_, [{:and, {:==, @status_field_id, ^status}, {:==, @age_field_id, ^age}}], _}] = ms(query)
     end
@@ -44,7 +44,7 @@ defmodule Ecto.Mnesia.QueryTest do
       query = from(so in "sell_offer", where: so.status == ^status)
       assert [{_, [{:==, @status_field_id, ^status}], _}] = ms(query)
 
-      # With map binding
+      # With map source
       query = from(so in "sell_offer", where: [status: ^status])
       assert [{_, [{:==, @status_field_id, ^status}], _}] = ms(query)
     end
@@ -63,7 +63,7 @@ defmodule Ecto.Mnesia.QueryTest do
     end
 
     test "in keyword style" do
-      # With name binding
+      # With name source
       assert [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
                 :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
                 :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
@@ -73,7 +73,7 @@ defmodule Ecto.Mnesia.QueryTest do
                :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
                :"$26"]]}] == ms(quote_and_eval(from so in SellOffer))
 
-      # Without name binding
+      # Without name source
       assert [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
                 :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
                 :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
@@ -95,7 +95,7 @@ defmodule Ecto.Mnesia.QueryTest do
       query = from(so in "sell_offer", where: so.status == "foo")
       assert [{_, [{:==, @status_field_id, "foo"}], _}] = ms(query)
 
-      # With map binding
+      # With map source
       query = from(so in "sell_offer", where: [status: "foo"])
       assert [{_, [{:==, @status_field_id, "foo"}], _}] = ms(query)
     end

@@ -8,38 +8,38 @@ defmodule Ecto.Mnesia.Record.Update do
   @doc """
   Update record by a `Ecto.Query.updates` instructions.
   """
-  def update_record(record, [], _bindings, _context), do: record
-  def update_record(record, [%Ecto.Query.QueryExpr{expr: expr} | expr_t], bindings, context) do
+  def update_record(record, [], _sources, _context), do: record
+  def update_record(record, [%Ecto.Query.QueryExpr{expr: expr} | expr_t], sources, context) do
     record
-    |> apply_rules(expr, bindings, context)
-    |> update_record(expr_t, bindings, context)
+    |> apply_rules(expr, sources, context)
+    |> update_record(expr_t, sources, context)
   end
 
-  defp apply_rules(record, [], _bindings, _context), do: record
-  defp apply_rules(record, [rule | rules_t], bindings, context) do
+  defp apply_rules(record, [], _sources, _context), do: record
+  defp apply_rules(record, [rule | rules_t], sources, context) do
     record
-    |> apply_conditions(rule, bindings, context)
-    |> apply_rules(rules_t, bindings, context)
+    |> apply_conditions(rule, sources, context)
+    |> apply_rules(rules_t, sources, context)
   end
 
-  defp apply_conditions(record, {_, []}, _bindings, _context), do: record
-  defp apply_conditions(record, {key, [con | conds_t]}, bindings, context) do
+  defp apply_conditions(record, {_, []}, _sources, _context), do: record
+  defp apply_conditions(record, {key, [con | conds_t]}, sources, context) do
     record
-    |> apply_condition({key, con}, bindings, context)
-    |> apply_conditions({key, conds_t}, bindings, context)
+    |> apply_condition({key, con}, sources, context)
+    |> apply_conditions({key, conds_t}, sources, context)
   end
 
-  defp apply_condition(record, {:set, {field, expr}}, bindings, context) do
+  defp apply_condition(record, {:set, {field, expr}}, sources, context) do
     index = Context.find_index!(field, context)
-    value = Query.condition_expression(expr, bindings, context)
+    value = Query.condition_expression(expr, sources, context)
 
     record
     |> List.replace_at(index, value)
   end
 
-  defp apply_condition(record, {:inc, {field, expr}}, bindings, context) do
+  defp apply_condition(record, {:inc, {field, expr}}, sources, context) do
     index = Context.find_index!(field, context)
-    value = Query.condition_expression(expr, bindings, context)
+    value = Query.condition_expression(expr, sources, context)
 
     record
     |> List.update_at(index, fn
@@ -49,8 +49,8 @@ defmodule Ecto.Mnesia.Record.Update do
     end)
   end
 
-  defp apply_condition(_record, {:push, _}, _bindings, _context),
+  defp apply_condition(_record, {:push, _}, _sources, _context),
     do: raise ArgumentError, ":push updates is not supported by the adapter"
-  defp apply_condition(_record, {:pull, _}, _bindings, _context),
+  defp apply_condition(_record, {:pull, _}, _sources, _context),
     do: raise ArgumentError, ":pull updates is not supported by the adapter"
 end
