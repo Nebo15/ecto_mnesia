@@ -91,7 +91,7 @@ defmodule Ecto.Mnesia.Record.Context do
       {_index, placeholder} -> placeholder
     end
   end
-  def find_field_placeholder!(field, %Context{}), do: field # TODO: remove this line
+  def find_field_placeholder!(field, %Context{}), do: field
 
   @doc """
   Returns MatchSpec body placeholders for all fields in a context.
