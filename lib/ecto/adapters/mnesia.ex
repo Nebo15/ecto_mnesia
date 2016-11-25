@@ -194,13 +194,14 @@ defmodule Ecto.Adapters.Mnesia do
   end
 
   # Insert schema with auto-generating primary key value
-  # TODO: Check that PK is unique, don't override record
   defp do_insert(table, schema, {pk_field, _pk_type}, params) do
     params = params |> put_new_pk(pk_field, table)
     record = schema |> Record.new(params, table)
     case Table.insert(table, record) do
       {:ok, ^record} ->
         {:ok, params}
+      {:error, :already_exists} ->
+        {:invalid, [{:unique, pk_field}]}
       {:error, reason} ->
         {:error, reason}
     end

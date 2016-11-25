@@ -145,9 +145,11 @@ defmodule Ecto.RepoTest do
   # ## Changesets
 
   test "insert, update, insert_or_update and delete accepts changesets" do
-    valid = Ecto.Changeset.cast(%SellOffer{id: 1}, %{}, [])
+    valid = Ecto.Changeset.cast(%SellOffer{id: 2}, %{}, [])
     assert {:ok, %SellOffer{}} = TestRepo.insert(valid)
     assert {:ok, %SellOffer{}} = TestRepo.update(valid)
+
+    valid = Ecto.Changeset.cast(%SellOffer{id: 3}, %{}, [])
     assert {:ok, %SellOffer{}} = TestRepo.insert_or_update(valid)
     assert {:ok, %SellOffer{}} = TestRepo.delete(valid)
   end
@@ -169,9 +171,11 @@ defmodule Ecto.RepoTest do
   end
 
   test "insert!, update! and delete! accepts changesets" do
-    valid = Ecto.Changeset.cast(%SellOffer{id: 1}, %{}, [])
+    valid = Ecto.Changeset.cast(%SellOffer{id: 2}, %{}, [])
     assert %SellOffer{} = TestRepo.insert!(valid)
     assert %SellOffer{} = TestRepo.update!(valid)
+
+    valid = Ecto.Changeset.cast(%SellOffer{id: 3}, %{}, [])
     assert %SellOffer{} = TestRepo.insert_or_update!(valid)
     assert %SellOffer{} = TestRepo.delete!(valid)
   end
