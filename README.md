@@ -59,11 +59,11 @@ If you want to know more how this tool works take look at [Confex](https://githu
 
   In migrations you can select which kind of table you want to use:
 
-    ```elixir
-    create_if_not_exists table(:my_table, engine: :set) do
-      ...
-    end
-    ```
+  ```elixir
+  create_if_not_exists table(:my_table, engine: :set) do
+    # ...
+  end
+  ```
 
   Supported types:
 
