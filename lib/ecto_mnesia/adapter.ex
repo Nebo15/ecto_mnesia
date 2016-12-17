@@ -198,7 +198,12 @@ defmodule Ecto.Mnesia.Adapter do
   Run `fun` inside a Mnesia transaction
   """
   def transaction(_repo, _opts, fun) do
-    Table.transaction(fun)
+    case Table.transaction(fun) do
+      {:error, reason} ->
+        {:error, reason}
+      result ->
+        {:ok, result}
+    end
   end
 
   @doc """

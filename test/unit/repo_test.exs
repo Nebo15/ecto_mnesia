@@ -142,6 +142,12 @@ defmodule Ecto.RepoTest do
     end
   end
 
+  test "transaction returns {:ok, _} tuple" do
+    assert {:ok, %SellOffer{}} = TestRepo.transaction(fn ->
+      %SellOffer{}
+    end)
+  end
+
   # ## Changesets
 
   test "insert, update, insert_or_update and delete accepts changesets" do
