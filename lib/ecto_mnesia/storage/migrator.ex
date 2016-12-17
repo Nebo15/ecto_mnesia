@@ -12,11 +12,11 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   def execute(repo, {:create, %Ecto.Migration.Table{name: table, engine: type}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
-    new_attrs = instructions
+    table_attrs = instructions
     |> Enum.reduce([], &reduce_fields(&1, &2, [], :skip))
     |> Enum.uniq()
 
-    case do_create_table(repo, table, type, new_attrs) do
+    case do_create_table(repo, table, type, table_attrs) do
       :ok -> :ok
       :already_exists -> raise "Table #{table} already exists"
     end
@@ -31,11 +31,12 @@ defmodule Ecto.Mnesia.Storage.Migrator do
       :exit, {:aborted, _reason} -> []
     end
 
-    new_attrs = instructions
+    new_table_attrs = instructions
     |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, [], :skip))
     |> Enum.uniq()
+    |> IO.inspect
 
-    case do_create_table(repo, table, type, new_attrs) do
+    case do_create_table(repo, table, type, new_table_attrs) do
       :ok -> :ok
       :already_exists -> :ok
     end
@@ -50,12 +51,12 @@ defmodule Ecto.Mnesia.Storage.Migrator do
       :exit, {:aborted, _reason} -> []
     end
 
-    new_attrs = instructions
+    new_table_attrs = instructions
     |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, table_attrs, :raise))
     |> Enum.uniq()
 
     try do
-      case Mnesia.transform_table(table, &alter_fn(&1, table_attrs, new_attrs), new_attrs) do
+      case Mnesia.transform_table(table, &alter_fn(&1, table_attrs, new_table_attrs), new_table_attrs) do
         {:atomic, :ok} -> :ok
         error -> error
       end
