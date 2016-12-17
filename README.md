@@ -40,12 +40,14 @@ So clustering should be an option only when you absolutely sure how you will rec
 
     config :ecto_mnesia,
       host: {:system, :atom, "MNESIA_HOST", Kernel.node()},
-      dir: {:system, "MNESIA_DATA_DIR", "priv/data/mnesia"},
       storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
+
+    config :mnesia,
+      dir: 'priv/data/mnesia' # Make sure this directory exists
 
 Notice that `{:system, [TYPE], ENV_NAME, default_value}` tuples can be replaced with any raw values.
 
-They tell adapter to read configuration from environment in run-time, so you will be able to set `MNESIA_HOST`, `MNESIA_DATA_DIR`, `MNESIA_STORAGE_TYPE` environment variables, which is very useful when you releasing app in production and don't want to rebuild all code on each config change.
+They tell adapter to read configuration from environment in run-time, so you will be able to set `MNESIA_HOST` and `MNESIA_STORAGE_TYPE` environment variables, which is very useful when you releasing app in production and don't want to rebuild all code on each config change.
 
 If you want to know more how this tool works take look at [Confex](https://github.com/Nebo15/confex) package.
 
