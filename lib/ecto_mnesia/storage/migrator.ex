@@ -135,7 +135,8 @@ defmodule Ecto.Mnesia.Storage.Migrator do
       {:atomic, :ok} ->
         Mnesia.wait_for_tables([table], 1_000)
         :ok
-      {:aborted, {:already_exists, ^table}} -> :already_exists
+      {:aborted, {:already_exists, ^table}} ->
+        :already_exists
     end
   end
 
