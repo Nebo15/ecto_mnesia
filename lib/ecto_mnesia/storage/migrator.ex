@@ -34,7 +34,6 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     new_table_attrs = instructions
     |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, [], :skip))
     |> Enum.uniq()
-    |> IO.inspect
 
     case do_create_table(repo, table, type, new_table_attrs) do
       :ok -> :ok
