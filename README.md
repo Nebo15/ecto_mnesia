@@ -103,7 +103,7 @@ It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be ins
 
     ```elixir
     def deps do
-      [{:ecto_mnesia, "~> 0.6.3"}]
+      [{:ecto_mnesia, "~> 0.6.4"}]
     end
     ```
 
