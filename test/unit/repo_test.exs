@@ -221,7 +221,7 @@ defmodule Ecto.RepoTest do
   end
 
   test "insert!, update!, insert_or_update! and delete! fail on changeset with wrong action" do
-    invalid = %Ecto.Changeset{valid?: true, data: %SellOffer{}, action: :other}
+    invalid = %Ecto.Changeset{valid?: true, data: %SellOffer{id: 123}, action: :other}
 
     assert_raise ArgumentError, "a changeset with action :other was given to TestRepo.insert/2", fn ->
       TestRepo.insert!(invalid)
