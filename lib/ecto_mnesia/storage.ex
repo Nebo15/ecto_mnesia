@@ -33,9 +33,7 @@ defmodule Ecto.Mnesia.Storage do
 
   ## Examples
 
-      storage_up(host: `Kernel.node`,
-                 storage_type: :disc_copies,
-                 dir: 'my_data_dir/')
+      storage_up(host: `Kernel.node`, storage_type: :disc_copies)
   """
   def storage_up(config) do
     config = conf(config)
