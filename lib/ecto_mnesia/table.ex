@@ -144,6 +144,8 @@ defmodule Ecto.Mnesia.Table do
   """
   def transaction(fun, context \\ :transaction) do
     case activity(context, fun) do
+      {:error, {%{} = reason, stack}, _} ->
+        reraise reason, stack
       {:error, reason, stack} ->
         :erlang.raise(:error, reason, stack)
       {:raise, err} ->
