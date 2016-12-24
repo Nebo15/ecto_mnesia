@@ -147,7 +147,7 @@ defmodule Ecto.Mnesia.Adapter do
   """
   # TODO: deal with `opts`: `on_conflict` and `returning`
   def insert_all(repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
-                 _header, rows, _on_conflict, returning, _opts) do
+                 _header, rows, _on_conflict, _returning, _opts) do
     table = table |> Table.get_name()
     result = Table.transaction(fn ->
       rows
@@ -166,7 +166,7 @@ defmodule Ecto.Mnesia.Adapter do
     case result do
       {:error, _reason} ->
         {0, nil}
-      {count, records} ->
+      {count, _records} ->
         {count, nil}
     end
   end
