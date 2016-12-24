@@ -146,18 +146,29 @@ defmodule Ecto.Mnesia.Adapter do
   Insert all
   """
   # TODO: deal with `opts`: `on_conflict` and `returning`
-  def insert_all(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
-                 _header, rows, _on_conflict, _returning, _opts) do
+  def insert_all(repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
+                 _header, rows, _on_conflict, returning, _opts) do
     table = table |> Table.get_name()
-    {count, _rows} = Table.transaction(fn ->
+    result = Table.transaction(fn ->
       rows
       |> Enum.reduce({0, []}, fn params, {index, acc} ->
-        {:ok, record} = do_insert(table, schema, autogenerate_id, params)
-        {index + 1, [record] ++ acc}
+        case do_insert(table, schema, autogenerate_id, params) do
+          {:ok, record} ->
+            {index + 1, [record] ++ acc}
+          {:invalid, [{:unique, _pk_field}]} ->
+            rollback(repo, nil)
+          {:error, _reason} ->
+            rollback(repo, nil)
+        end
       end)
     end)
 
-    {count, nil}
+    case result do
+      {:error, _reason} ->
+        {0, nil}
+      {count, records} ->
+        {count, nil}
+    end
   end
 
   # Insert schema without primary keys
@@ -214,7 +225,7 @@ defmodule Ecto.Mnesia.Adapter do
   def in_transaction?(_repo), do: Mnesia.is_transaction()
 
   @doc """
-  Transaction rollbacks is not supported
+  Transaction rollbacks is not fully supported.
   """
   def rollback(_repo, _tid), do: Mnesia.abort(:rollback)
 

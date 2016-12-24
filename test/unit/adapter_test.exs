@@ -96,25 +96,36 @@ defmodule Ecto.Adapters.MnesiaTest do
     end
   end
 
-  test "insert all" do
-    records = [
-      [loan_id: "hello", age: 11],
-      [loan_id: "hello", age: 15],
-      [loan_id: "world", age: 21]
-    ]
+  describe "insert_all" do
+    test "multiple records" do
+      records = [
+        [loan_id: "hello", age: 11],
+        [loan_id: "hello", age: 15],
+        [loan_id: "world", age: 21]
+      ]
 
-    assert {3, nil} == TestRepo.insert_all(SellOffer, records)
+      assert {3, nil} == TestRepo.insert_all(SellOffer, records)
+    end
+
+    test "duplicate records" do
+      records = [
+        [id: 1, loan_id: "hello", age: 11],
+        [id: 1, loan_id: "hello", age: 15]
+      ]
+
+      assert {0, nil} == TestRepo.insert_all(SellOffer, records)
+    end
+
+    # test "insert all with return" do
+    #   records = [
+    #     [loan_id: "hello", age: 11],
+    #     [loan_id: "hello", age: 15],
+    #     [loan_id: "world", age: 21]
+    #   ]
+
+    #   assert {3, nil} == TestRepo.insert_all(SellOffer, records, returning: true)
+    # end
   end
-
-  # test "insert all with return" do
-  #   records = [
-  #     [loan_id: "hello", age: 11],
-  #     [loan_id: "hello", age: 15],
-  #     [loan_id: "world", age: 21]
-  #   ]
-
-  #   assert {3, nil} == TestRepo.insert_all(SellOffer, records, returning: true)
-  # end
 
   describe "update" do
     setup do
