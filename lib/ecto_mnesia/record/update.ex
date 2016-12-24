@@ -30,7 +30,7 @@ defmodule Ecto.Mnesia.Record.Update do
 
   defp apply_condition(record, {:set, {field, expr}}, sources, context) do
     index = Context.find_field_index!(field, context)
-    value = Context.MatchSpec.condition_expression(expr, sources, context)
+    value = Context.MatchSpec.unbind(expr, sources)
 
     record
     |> List.replace_at(index, value)
@@ -38,18 +38,20 @@ defmodule Ecto.Mnesia.Record.Update do
 
   defp apply_condition(record, {:inc, {field, expr}}, sources, context) do
     index = Context.find_field_index!(field, context)
-    value = Context.MatchSpec.condition_expression(expr, sources, context)
+    value = Context.MatchSpec.unbind(expr, sources)
 
     record
     |> List.update_at(index, fn
-      numeric when is_number(numeric) or is_float(numeric) -> numeric + value
-      nil -> value
+      numeric when is_number(numeric) or is_float(numeric) ->
+        numeric + value
+      nil ->
+        value
     end)
   end
 
   defp apply_condition(record, {:push, {field, expr}}, sources, context) do
     index = Context.find_field_index!(field, context)
-    value = Context.MatchSpec.condition_expression(expr, sources, context)
+    value = Context.MatchSpec.unbind(expr, sources)
 
     record
     |> List.update_at(index, fn
@@ -60,7 +62,7 @@ defmodule Ecto.Mnesia.Record.Update do
 
   defp apply_condition(record, {:pull, {field, expr}}, sources, context) do
     index = Context.find_field_index!(field, context)
-    value = Context.MatchSpec.condition_expression(expr, sources, context)
+    value = Context.MatchSpec.unbind(expr, sources)
 
     record
     |> List.update_at(index, fn

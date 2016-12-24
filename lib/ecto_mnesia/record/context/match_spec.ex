@@ -60,7 +60,7 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   defp match_conditions([], _sources, _context, acc),
     do: acc
   defp match_conditions([%{expr: expr, params: params} | tail], sources, context, acc) do
-    condition = match_condition(expr, merge_sources(sources, params), context)
+    condition = condition_expression(expr, merge_sources(sources, params), context)
     match_conditions(tail, sources, context, [condition | acc])
   end
 
@@ -68,13 +68,19 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   defp merge_sources(sources1, sources2) when is_list(sources1) and is_list(sources2), do: sources1 ++ sources2
   defp merge_sources(sources, nil), do: sources
 
+  # Unbinding parameters
+  def condition_expression({op, [], [field, {:^, [], [_]} = binding]}, sources, context) do
+     parameters = unbind(binding, sources)
+     condition_expression({op, [], [field, parameters]}, sources, context)
+  end
+
   # `is_nil` is a special case when we need to :== with nil value
-  defp match_condition({:is_nil, [], [field]}, sources, context) do
+  def condition_expression({:is_nil, [], [field]}, sources, context) do
     {:==, condition_expression(field, sources, context), nil}
   end
 
   # `:in` is a special case when we need to expand it to multiple `:or`'s
-  defp match_condition({:in, [], [field, parameters]}, sources, context) do
+  def condition_expression({:in, [], [field, parameters]}, sources, context) do
     field = condition_expression(field, sources, context)
 
     parameters
@@ -86,12 +92,12 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   end
 
   # Conditions that have one argument. Functions (is_nil, not).
-  defp match_condition({op, [], [field]}, sources, context) do
+  def condition_expression({op, [], [field]}, sources, context) do
     {guard_function_operation(op), condition_expression(field, sources, context)}
   end
 
   # Other conditions with multiple arguments (<, >, ==, !=, etc)
-  defp match_condition({op, [], [field, parameter]}, sources, context) do
+  def condition_expression({op, [], [field, parameter]}, sources, context) do
     {
       guard_function_operation(op),
       condition_expression(field, sources, context),

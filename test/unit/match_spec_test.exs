@@ -159,6 +159,23 @@ defmodule Ecto.Mnesia.Context.MatchSpecTest do
       assert [{_, [{:or, {:==, @age_field_id, 23}, {:==, @age_field_id, 26}}], _}] = ms(query)
     end
 
+    test "`in` with interpolation" do
+      statuses = ["ok", "canceled"]
+      loan_product_types = ["PDL"]
+
+      query =
+        from so in SellOffer,
+        where: so.status in ^statuses or so.age in [21, 23] or so.loan_product_type in ^loan_product_types
+
+      assert [{_, [{:or,
+        {:or,
+          {:or, {:==, @status_field_id, "ok"}, {:==, @status_field_id, "canceled"}},
+          {:or, {:==, @age_field_id, 21}, {:==, @age_field_id, 23}}
+        },
+        {:or, {:==, :"$19", "PDL"}}
+      }], _}] = ms(query)
+    end
+
     test "with `is_nil`" do
       query = from so in SellOffer, where: is_nil(so.age)
       assert [{_, [{:==, @age_field_id, nil}], _}] = ms(query)
