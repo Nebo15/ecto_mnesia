@@ -151,16 +151,7 @@ defmodule Ecto.Mnesia.Adapter do
     table = table |> Table.get_name()
     result = Table.transaction(fn ->
       rows
-      |> Enum.reduce({0, []}, fn params, {index, acc} ->
-        case do_insert(table, schema, autogenerate_id, params) do
-          {:ok, record} ->
-            {index + 1, [record] ++ acc}
-          {:invalid, [{:unique, _pk_field}]} ->
-            rollback(repo, nil)
-          {:error, _reason} ->
-            rollback(repo, nil)
-        end
-      end)
+      |> Enum.reduce({0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
     end)
 
     case result do
@@ -168,6 +159,17 @@ defmodule Ecto.Mnesia.Adapter do
         {0, nil}
       {count, _records} ->
         {count, nil}
+    end
+  end
+
+  defp insert_record(params, {index, acc}, repo, table, schema, autogenerate_id) do
+    case do_insert(table, schema, autogenerate_id, params) do
+      {:ok, record} ->
+        {index + 1, [record] ++ acc}
+      {:invalid, [{:unique, _pk_field}]} ->
+        rollback(repo, nil)
+      {:error, _reason} ->
+        rollback(repo, nil)
     end
   end
 
