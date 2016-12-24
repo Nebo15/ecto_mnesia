@@ -35,7 +35,7 @@ defmodule Ecto.Mnesia.Adapter do
   Automatically generate next ID for binary keys, leave sequence keys empty for generation on insert.
   """
   def autogenerate(:id), do: nil
-  def autogenerate(:embed_id), do: Ecto.UUID.autogenerate()
+  def autogenerate(:embed_id), do: Ecto.UUID.generate()
   def autogenerate(:binary_id), do: Ecto.UUID.autogenerate()
 
   @doc """
@@ -261,9 +261,9 @@ defmodule Ecto.Mnesia.Adapter do
   # Required methods for Ecto type casing
   def loaders({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.load_embed(primitive, &1)]
   def loaders(:binary_id, type), do: [Ecto.UUID, type]
-  def loaders(primitive, _type), do: [primitive]
+  def loaders(_primitive, type), do: [type]
 
   def dumpers({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.dump_embed(primitive, &1)]
   def dumpers(:binary_id, type), do: [type, Ecto.UUID]
-  def dumpers(primitive, _type), do: [primitive]
+  def dumpers(_primitive, type), do: [type]
 end
