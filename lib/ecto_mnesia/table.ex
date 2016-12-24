@@ -163,7 +163,7 @@ defmodule Ecto.Mnesia.Table do
     catch
       :exit, {:aborted, {:no_exists, [schema, _id]}} -> {:raise, "Schema #{inspect schema} does not exist"}
       :exit, {:aborted, {:no_exists, schema}} -> {:raise, "Schema #{inspect schema} does not exist"}
-      :exit, {:aborted, reason} -> {:error, reason}
+      :exit, {:aborted, reason} -> {:error, reason, System.stacktrace()}
       :exit, reason -> {:error, reason, System.stacktrace()}
     end
   end
