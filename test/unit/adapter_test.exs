@@ -50,6 +50,21 @@ defmodule Ecto.Adapters.MnesiaTest do
       assert updated_at
     end
 
+    test "duplicate record" do
+      schema = %SellOffer{
+        id: 2,
+        loan_id: "hello"
+      }
+
+      assert {:ok, _res_schema} = schema
+      |> TestRepo.insert
+
+      assert_raise Ecto.ConstraintError, fn ->
+        schema
+        |> TestRepo.insert
+      end
+    end
+
     test "changeset" do
       changeset = %SellOffer{}
       |> Ecto.Changeset.change([loan_id: "hello"])
