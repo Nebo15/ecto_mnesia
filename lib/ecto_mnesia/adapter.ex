@@ -121,7 +121,9 @@ defmodule Ecto.Mnesia.Adapter do
       true ->
         result = records
         |> Enum.map(fn record ->
-          record |> Tuple.to_list() |> List.delete_at(0)
+          record
+          |> Tuple.to_list()
+          |> List.delete_at(0)
         end)
         |> Record.to_query_result(context)
         |> ordering_fn.()

@@ -35,9 +35,11 @@ defmodule Ecto.Mnesia.Record do
     |> build_result(record, context)
   end
 
-  defp get_result_type(%Ecto.Query.SelectExpr{expr: {:&, [], [0]}}, schema), do: schema.__struct__
+  defp get_result_type(%Ecto.Query.SelectExpr{expr: {:&, [], [0]}}, schema), do: schema |> get_loaded_schema()
   defp get_result_type(%Ecto.Query.SelectExpr{expr: _expr}, _schema), do: []
   defp get_result_type(list, _schema) when is_list(list), do: []
+
+  defp get_loaded_schema(schema), do: schema.__struct__ |> Ecto.put_meta(state: :loaded)
 
   defp build_result(acc, record, %Context{table: %Context.Table{structure: structure},
                                           match_spec: %Context.MatchSpec{body: match_body}}) when is_map(acc) do
