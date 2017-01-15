@@ -35,24 +35,29 @@ defmodule Ecto.Mnesia.Record do
     |> build_result(record, context)
   end
 
-  defp get_result_type(%Ecto.Query.SelectExpr{expr: {:&, [], [0]}}, schema), do: schema |> get_loaded_schema()
-  defp get_result_type(%Ecto.Query.SelectExpr{expr: _expr}, _schema), do: []
-  defp get_result_type(list, _schema) when is_list(list), do: []
+  defp get_result_type(%Ecto.Query.SelectExpr{expr: {:&, [], [0]}}, schema) do
+    loaded_schema = schema |> get_loaded_schema()
+    {loaded_schema, loaded_schema}
+  end
+  defp get_result_type(%Ecto.Query.SelectExpr{expr: _expr}, schema), do: {[], schema |> get_loaded_schema()}
+  defp get_result_type(list, schema) when is_list(list), do: {[], schema |> get_loaded_schema()}
 
   defp get_loaded_schema(schema), do: schema.__struct__ |> Ecto.put_meta(state: :loaded)
 
-  defp build_result(acc, record, %Context{table: %Context.Table{structure: structure},
-                                          match_spec: %Context.MatchSpec{body: match_body}}) when is_map(acc) do
+  defp build_result({acc, _schema}, record, %Context{table: %Context.Table{structure: structure},
+                                                     match_spec: %Context.MatchSpec{body: match_body}})
+    when is_map(acc) do
     record
     |> Enum.reduce({0, acc}, &reduce_schema(&1, &2, match_body, structure))
     |> elem(1)
     |> List.wrap()
   end
 
-  defp build_result([], record, %Context{query: %Context.Query{select: %Ecto.Query.SelectExpr{fields: select_fields},
-                                                               sources: sources}}) do
+  defp build_result({[], schema}, record, %Context{query: %Context.Query{
+                                                            select: %Ecto.Query.SelectExpr{fields: select_fields},
+                                                            sources: sources}}) do
     select_fields
-    |> Enum.reduce({0, []}, &reduce_list(&1, &2, record, sources))
+    |> Enum.reduce({0, []}, &reduce_list(&1, &2, record, sources, schema))
     |> elem(1)
     |> List.wrap()
   end
@@ -63,13 +68,21 @@ defmodule Ecto.Mnesia.Record do
     {field_index + 1, struct}
   end
 
-  defp reduce_list({{:., [], [{:&, [], [0]}, _field_name]}, _, []}, {field_index, acc}, record, _sources)
+  defp reduce_list({{:., [], [{:&, [], [0]}, _field_name]}, _, []}, {field_index, acc}, record, _sources, _schema)
     when is_list(acc) do
     field_value = record |> Enum.at(field_index)
     {field_index + 1, acc ++ [field_value]}
   end
 
-  defp reduce_list({:^, _, _} = source, {field_index, acc}, _record, sources) do
+  defp reduce_list({:&, [], [0, fields, _]}, {field_index, acc}, record, _sources, schema) do
+    field_value = fields
+    |> Enum.zip(record)
+    |> Enum.reduce(schema, fn {key, value}, schema -> Map.put(schema, key, value) end)
+
+    {field_index + 1, acc ++ [field_value]}
+  end
+
+  defp reduce_list({:^, _, _} = source, {field_index, acc}, _record, sources, __schema) do
     field_value = source |> Context.MatchSpec.unbind(sources)
     {field_index + 1, acc ++ [field_value]}
   end
