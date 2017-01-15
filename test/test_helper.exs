@@ -1,5 +1,15 @@
 Code.require_file "support/test_repo.exs", __DIR__
-ExUnit.start()
+ExUnit.start(exclude: [
+  :composite_pk,
+  :unique_constraint,
+  :join,
+  :foreign_key_constraint,
+  :returning,
+  :with_conflict_target,
+  :without_conflict_target,
+  :invalid_prefix,
+
+])
 
 # Configure Ecto for support and tests
 Application.put_env(:ecto, :primary_key_type, :id)
