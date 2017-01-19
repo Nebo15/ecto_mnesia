@@ -88,7 +88,7 @@ defmodule Ecto.Mnesia.Record do
     {field_index + 1, acc ++ [field_value]}
   end
 
-  defp reduce_list({:^, _, _} = source, {field_index, acc}, _record, sources, __schema) do
+  defp reduce_list({:^, _, _} = source, {field_index, acc}, _record, sources, _schema) do
     field_value = source |> Context.MatchSpec.unbind(sources)
     {field_index + 1, acc ++ [field_value]}
   end

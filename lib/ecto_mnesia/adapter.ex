@@ -56,7 +56,7 @@ defmodule Ecto.Mnesia.Adapter do
                       sources, _preprocess, _opts) do
     context = context |> Context.assign_query(query, sources)
     match_spec = Context.get_match_spec(context)
-    Logger.debug("Selecting by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
+    Logger.debug("Selecting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     result = table
     |> Table.select(match_spec, limit)
