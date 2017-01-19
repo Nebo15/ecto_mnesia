@@ -8,7 +8,6 @@ ExUnit.start(exclude: [
   :with_conflict_target,
   :without_conflict_target,
   :invalid_prefix,
-
 ])
 
 # Configure Ecto for support and tests
