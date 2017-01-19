@@ -140,7 +140,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     end
   end
 
-  defp get_engine(nil), do: :set
+  defp get_engine(nil), do: :ordered_set
   defp get_engine(type) when is_atom(type), do: type
 
   defp reduce_fields({:add, field, _type, _opts}, fields, table_fields, on_duplicate) do
