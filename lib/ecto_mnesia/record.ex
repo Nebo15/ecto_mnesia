@@ -3,19 +3,24 @@ defmodule Ecto.Mnesia.Record do
   This module provides set of helpers for conversions between Mnesia records and Ecto Schemas.
   """
   alias Ecto.Mnesia.Record.Context
-  alias Ecto.Mnesia.Table
 
   @doc """
   Convert Ecto Schema struct to tuple that can be inserted to Mnesia.
   """
-  def new(schema, params, table) do
-    table = table |> Table.get_name()
-    fields = schema.__schema__(:fields)
-    nilled_tuple = List.to_tuple([table | List.duplicate(nil, length(fields))])
+  def new(schema, table, params) do
+    table
+    |> Context.new(schema)
+    |> new(params)
+  end
+  def new(%Context{table: %Context.Table{name: table, structure: structure}} = context, params) do
+    nilled_record = [table | List.duplicate(nil, length(structure))]
+
     params
-    |> List.foldl(nilled_tuple, fn ({k, v}, acc) ->
-      :erlang.setelement(:string.str(fields, [k]) + 1, acc, v)
+    |> List.foldl(nilled_record, fn {field, value}, acc ->
+      acc
+      |> List.replace_at(Context.find_field_index!(field, context) + 1, value)
     end)
+    |> List.to_tuple()
   end
 
   @doc """

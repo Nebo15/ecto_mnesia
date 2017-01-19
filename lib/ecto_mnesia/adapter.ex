@@ -175,7 +175,8 @@ defmodule Ecto.Mnesia.Adapter do
 
   # Insert schema without primary keys
   defp do_insert(table, schema, nil, params) do
-    record = schema |> Record.new(params, table)
+    record = schema |> Record.new(table, params)
+
     case Table.insert(table, record) do
       {:ok, ^record} ->
         {:ok, params}
@@ -187,7 +188,8 @@ defmodule Ecto.Mnesia.Adapter do
   # Insert schema with auto-generating primary key value
   defp do_insert(table, schema, {pk_field, _pk_type}, params) do
     params = params |> put_new_pk(pk_field, table)
-    record = schema |> Record.new(params, table)
+    record = schema |> Record.new(table, params)
+
     case Table.insert(table, record) do
       {:ok, ^record} ->
         {:ok, params}
@@ -248,10 +250,7 @@ defmodule Ecto.Mnesia.Adapter do
   def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: autogenerate_id},
              params, filter, _autogen, _opts) do
     pk = get_pk!(filter, autogenerate_id)
-
-    record = schema
-    |> Record.new(params, table)
-
+    record = schema |> Record.new(table, params)
     case table |> Table.update(pk, record) do
       {:ok, _record} -> {:ok, params}
       error -> error
