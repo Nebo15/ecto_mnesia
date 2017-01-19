@@ -48,6 +48,7 @@ defmodule Ecto.Mnesia.Record do
   defp get_result_type(list, schema) when is_list(list), do: {[], schema |> get_loaded_schema()}
 
   defp get_loaded_schema(schema), do: schema.__struct__ |> Ecto.put_meta(state: :loaded)
+  defp get_loaded_schema(nil), do: %{}
 
   defp build_result({acc, _schema}, record, %Context{table: %Context.Table{structure: structure},
                                                      match_spec: %Context.MatchSpec{body: match_body}})
