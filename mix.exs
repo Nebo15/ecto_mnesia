@@ -1,7 +1,7 @@
 defmodule Ecto.Mnesia.Mixfile do
   use Mix.Project
 
-  @version "0.6.10"
+  @version "0.7.0"
 
   def project do
     [app: :ecto_mnesia,
