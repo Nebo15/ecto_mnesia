@@ -69,8 +69,8 @@ If you want to know more how this tool works take look at [Confex](https://githu
 
   Supported types:
 
-  - `:set` - default type. Expected your records to have at least one unique rprimary key that **should be in first column**.
-  - `:ordered_set` - same as `:set`, but Mnesia will store data in a table will be ordered by primary key.
+  - `:set` - expected your records to have at least one unique rprimary key that **should be in first column**.
+  - `:ordered_set` - default type. Same as `:set`, but Mnesia will store data in a table will be ordered by primary key.
   - `:bag` - expected all records to be unique, but no primary key is required. (Internally, it will use first field as a primary key).
 
 ##### Ordered Set Performance
