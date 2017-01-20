@@ -51,16 +51,16 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   """
-  def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
+  def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
                       {:nocache, {:all, %Ecto.Query{} = query, limit, context, ordering_fn}},
-                      sources, _preprocess, _opts) do
+                      sources, preprocess, _opts) do
     context = context |> Context.assign_query(query, sources)
     match_spec = Context.get_match_spec(context)
     Logger.debug("Selecting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     result = table
     |> Table.select(match_spec, limit)
-    |> Record.to_query_result(context)
+    |> Enum.map(&process_row(&1, preprocess, fields))
     |> ordering_fn.()
 
     {length(result), result}
@@ -69,11 +69,12 @@ defmodule Ecto.Mnesia.Adapter do
   @doc """
   Deletes all records that match Ecto.Query
   """
-  def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
+  def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
                       {:nocache, {:delete_all, %Ecto.Query{} = query, limit, context, ordering_fn}},
-                      sources, _preprocess, opts) do
+                      sources, preprocess, opts) do
     context = context |> Context.assign_query(query, sources)
     match_spec = Context.get_match_spec(context)
+    preprocess_fn = &process_row(&1, preprocess, fields)
     Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     table = table |> Table.get_name()
@@ -84,18 +85,19 @@ defmodule Ecto.Mnesia.Adapter do
         {:ok, _} = Table.delete(table, List.first(record))
         record
       end)
-      |> return_all(context, ordering_fn, opts)
+      |> return_all(ordering_fn, preprocess_fn, opts)
     end)
   end
 
   @doc """
   Update all records by a Ecto.Query.
   """
-  def execute(_repo, %{sources: {{table, _schema}}, fields: _fields, take: _take},
+  def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
                       {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, limit, context, ordering_fn}},
-                      sources, _preprocess, opts) do
+                      sources, preprocess, opts) do
     context = context |> Context.assign_query(query, sources)
     match_spec = Context.get_match_spec(context)
+    preprocess_fn = &process_row(&1, preprocess, fields)
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit `#{inspect limit}`")
 
     table = table |> Table.get_name()
@@ -111,12 +113,12 @@ defmodule Ecto.Mnesia.Adapter do
         {:ok, result} = Table.update(table, List.first(record), update)
         result
       end)
-      |> return_all(context, ordering_fn, opts)
+      |> return_all(ordering_fn, preprocess_fn, opts)
     end)
   end
 
   # Constructs return for `*_all` methods.
-  defp return_all(records, context, ordering_fn, opts) do
+  defp return_all(records, ordering_fn, preprocess_fn, opts) do
     case Keyword.get(opts, :returning) do
       true ->
         result = records
@@ -124,8 +126,8 @@ defmodule Ecto.Mnesia.Adapter do
           record
           |> Tuple.to_list()
           |> List.delete_at(0)
+          |> preprocess_fn.()
         end)
-        |> Record.to_query_result(context)
         |> ordering_fn.()
 
         {length(result), result}
@@ -133,6 +135,30 @@ defmodule Ecto.Mnesia.Adapter do
         {length(records), nil}
     end
   end
+
+  defp process_row(row, process, fields) do
+    Enum.map_reduce(fields, row, fn
+      {:&, _, [_, _, counter]} = field, acc ->
+        case split_and_not_nil(acc, counter, true, []) do
+          {nil, rest} -> {nil, rest}
+          {val, rest} -> {process.(field, val, nil), rest}
+        end
+      field, [h|t] ->
+        {process.(field, h, nil), t}
+    end) |> elem(0)
+  end
+
+  defp split_and_not_nil(rest, 0, true, _acc), do: {nil, rest}
+  defp split_and_not_nil(rest, 0, false, acc), do: {:lists.reverse(acc), rest}
+
+  defp split_and_not_nil([nil|t], count, all_nil?, acc) do
+    split_and_not_nil(t, count - 1, all_nil?, [nil|acc])
+  end
+
+  defp split_and_not_nil([h|t], count, _all_nil?, acc) do
+    split_and_not_nil(t, count - 1, false, [h|acc])
+  end
+
 
   @doc """
   Insert Ecto Schema struct to Mnesia database.
