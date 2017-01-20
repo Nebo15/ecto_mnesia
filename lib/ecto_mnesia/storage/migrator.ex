@@ -143,14 +143,6 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   defp get_engine(nil), do: :ordered_set
   defp get_engine(type) when is_atom(type), do: type
 
-  defp reduce_fields({:add, field, _type, _opts}, fields, table_fields, on_duplicate) do
-    if on_duplicate == :raise and field_exists?(table_fields, field) do
-      raise "Duplicate field #{field}"
-    end
-
-    fields ++ [field]
-  end
-
   defp reduce_fields({:remove, field}, fields, table_fields, on_not_found) do
     if on_not_found == :raise and !field_exists?(table_fields, field) do
       raise "Field #{field} not found"
@@ -160,8 +152,16 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     |> Enum.filter(&(&1 != field))
   end
 
+  defp reduce_fields({:add, field, _type, _opts}, fields, _table_fields, on_duplicate) do
+    if on_duplicate == :raise and field_exists?(fields, field) do
+      raise "Duplicate field #{field}"
+    end
+
+    fields ++ [field]
+  end
+
   defp reduce_fields({:modify, field, _type, _opts}, fields, table_fields, on_not_found) do
-    if on_not_found == :raise and !field_exists?(table_fields, field) do
+    if on_not_found == :raise and !field_exists?(table_fields ++ fields, field) do
       raise "Field #{field} not found"
     end
 
