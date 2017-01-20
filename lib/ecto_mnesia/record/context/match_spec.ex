@@ -69,6 +69,7 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   defp merge_sources(sources, nil), do: sources
 
   # Unbinding parameters
+  def condition_expression({:^, [], [_]} = binding, sources, _context), do: unbind(binding, sources)
   def condition_expression({op, [], [field, {:^, [], [_]} = binding]}, sources, context) do
      parameters = unbind(binding, sources)
      condition_expression({op, [], [field, parameters]}, sources, context)
@@ -83,12 +84,19 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   def condition_expression({:in, [], [field, parameters]}, sources, context) do
     field = condition_expression(field, sources, context)
 
-    parameters
+    expr = parameters
+    |> unbind(sources)
     |> Enum.map(fn parameter ->
       {:==, field, condition_expression(parameter, sources, context)}
     end)
-    |> List.insert_at(0, :or)
-    |> List.to_tuple()
+
+    if expr == [] do
+      {:==, true, false} # Hack to return zero values
+    else
+      expr
+      |> List.insert_at(0, :or)
+      |> List.to_tuple()
+    end
   end
 
   # Conditions that have one argument. Functions (is_nil, not).
@@ -123,6 +131,10 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   def condition_expression(%Ecto.Query.Tagged{value: value}, _sources, _context), do: value
   def condition_expression(raw_value, sources, _context), do: unbind(raw_value, sources)
 
+  def unbind({:^, [], [start_at, end_at]}, sources) do
+    sources
+    |> Enum.slice(Range.new(start_at, end_at))
+  end
   def unbind({:^, [], [index]}, sources) do
     sources
     |> Enum.at(index)
