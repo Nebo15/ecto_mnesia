@@ -10,6 +10,8 @@ defmodule Ecto.Mnesia.Record.Context do
   @doc """
   Creates new context table, and stores schema meta information that can be used to reconstruct query result.
   """
+  def new(table, schema) when is_atom(table),
+    do: table |> Atom.to_string() |> new(schema)
   def new(table, schema) when is_binary(table) and is_atom(schema) do
     table_name = table |> Table.get_name()
     mnesia_attributes = case table_name |> Table.attributes() do

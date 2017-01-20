@@ -41,7 +41,7 @@ defmodule Ecto.RepoTest do
   end
 
   test "works with custom source schema" do
-    assert_raise RuntimeError, "Schema :custom_schema does not exist", fn ->
+    assert_raise ArgumentError, "Field `:updated_at` does not exist in table `:custom_schema`", fn ->
       schema = %SellOffer{id: 1, loan_id: "abc"} |> put_meta(source: "custom_schema")
       TestRepo.update!(schema |> Ecto.Changeset.change, force: true)
       TestRepo.delete!(schema)
