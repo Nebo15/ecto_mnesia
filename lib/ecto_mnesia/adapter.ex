@@ -141,7 +141,8 @@ defmodule Ecto.Mnesia.Adapter do
   end
 
   defp process_row(row, process, fields) do
-    Enum.map_reduce(fields, row, fn
+    fields
+    |> Enum.map_reduce(row, fn
       {:&, _, [_, _, counter]} = field, acc ->
         case split_and_not_nil(acc, counter, true, []) do
           {nil, rest} -> {nil, rest}
@@ -149,7 +150,8 @@ defmodule Ecto.Mnesia.Adapter do
         end
       field, [h|t] ->
         {process.(field, h, nil), t}
-    end) |> elem(0)
+    end)
+    |> elem(0)
   end
 
   defp split_and_not_nil(rest, 0, true, _acc), do: {nil, rest}
