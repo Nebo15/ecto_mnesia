@@ -7,7 +7,7 @@ Ecto 2.X adapter for Mnesia Erlang term database. In most cases it can be used a
 Supported features:
 
 - Compatible `Ecto.Repo` API.
-- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. Also adapter emulates `query.select` and `query.order_bys` behaviors, even trough Mnesia itself does not support them.
+- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. Also adapter emulates `query.select` and `query.order_bys` behaviours, even though Mnesia itself does not support them.
 - Auto-generated (via sequence table) `:id` primary keys.
 - Migrations and database setup via `Ecto.Migrations`.
 - Transactions.
@@ -26,9 +26,9 @@ Not supported features (create issue and vote if you need them):
 
 ## Why Mnesia?
 
-We have production task that needs low read-latency database and our data fits in RAM, so Mnesia is a best choice: it's part of OTP, shares same space as our app does, work fast in RAM and supports transactions (it's critical for fintech projects).
+We have a production task that needs low read-latency database and our data fits in RAM, so Mnesia is the best choice: it's part of OTP, shares same space as our app does, work fast in RAM and supports transactions (it's critical for fintech projects).
 
-Why do we need adapter? We don't want to lock us to any specific database, since requirements can change. Ecto allows to switch databases by simply modifying config, and we might want to go back to Postres or another DB.
+Why do we need an adapter? We don't want to lock us to any specific database, since requirements can change. Ecto allows to switch databases by simply modifying the config, and we might want to go back to Postres or another DB.
 
 ### Clustering
 
@@ -55,7 +55,7 @@ If you want to know more how this tool works take look at [Confex](https://githu
 
   - `:disc_copies` - store data in both RAM and on dics. Recommended value for most cases.
   - `:ram_copies` - store data only in RAM. Data will be lost on node restart. Useful when working with large datasets that don't need to be persisted.
-  - `:disc_only_copies` - store data only on dics. This will limit database size to 2GB and affect adapter performance.
+  - `:disc_only_copies` - store data only on disc. This will limit database size to 2GB and affect adapter performance.
 
 #### Table Types (Engines)
 
@@ -69,7 +69,7 @@ If you want to know more how this tool works take look at [Confex](https://githu
 
   Supported types:
 
-  - `:set` - expected your records to have at least one unique rprimary key that **should be in first column**.
+  - `:set` - expected your records to have at least one unique primary key that **should be in first column**.
   - `:ordered_set` - default type. Same as `:set`, but Mnesia will store data in a table will be ordered by primary key.
   - `:bag` - expected all records to be unique, but no primary key is required. (Internally, it will use first field as a primary key).
 
@@ -126,6 +126,6 @@ The docs can be found at [https://hexdocs.pm/ecto_mnesia](https://hexdocs.pm/ect
 
 ## Thanks
 
-We want to thank [meh](https://github.com/meh) for his [Amnesia](https://github.com/meh/amnesia) package that helped a loot in initial Mnesia investigations. Some pieces of code was copied from hes repo.
+We want to thank [meh](https://github.com/meh) for his [Amnesia](https://github.com/meh/amnesia) package that helped a loot in initial Mnesia investigations. Some pieces of code was copied from his repo.
 
 Also big thanks to [josevalim](https://github.com/josevalim) for Elixir, Ecto and active help while this adapter was developed.
