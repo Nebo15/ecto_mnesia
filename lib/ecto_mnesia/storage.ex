@@ -15,12 +15,17 @@ defmodule Ecto.Mnesia.Storage do
   @doc """
   Start the Mnesia database.
   """
-  def start, do: Mnesia.start
-
+  def start do
+    check_mnesia_dir()
+    Mnesia.start()
+  end
   @doc """
   Stop the Mnesia database.
   """
-  def stop, do: Mnesia.stop
+  def stop do
+    check_mnesia_dir()
+    Mnesia.stop
+  end
 
   @doc """
   Creates the storage given by options.
@@ -36,6 +41,7 @@ defmodule Ecto.Mnesia.Storage do
       storage_up(host: `Kernel.node`, storage_type: :disc_copies)
   """
   def storage_up(config) do
+    check_mnesia_dir()
     config = conf(config)
 
     Logger.info "==> Setting Mnesia schema table copy type"
@@ -55,6 +61,7 @@ defmodule Ecto.Mnesia.Storage do
   Temporarily stops Mnesia, deletes schema and then brings it back up again.
   """
   def storage_down(config) do
+    check_mnesia_dir()
     config = conf(config)
     stop()
     Mnesia.delete_schema([config[:host]])
@@ -67,5 +74,20 @@ defmodule Ecto.Mnesia.Storage do
       storage_type: config[:storage_type] || @defaults[:storage_type]
     ]
     |> Confex.process_env()
+  end
+
+  @doc """
+  Checks that the Application environment for `mnesia_dir` is of
+  a correct type.
+  """
+  def check_mnesia_dir() do
+    dir = Application.get_env(:mnesia, :dir, nil)
+    case dir do
+      nil -> Logger.error "Mnesia dir is not set. Mnesia will not work."
+      d when is_binary(d) ->
+        Logger.error "Mnesia dir is a binary. Mnesia requires a charlist, which is set with simple quotes ('')"
+      d when is_list(d) -> :ok
+      d -> Logger.error "Mnesia dir is not character list. Mnesia will not work. "
+    end
   end
 end
