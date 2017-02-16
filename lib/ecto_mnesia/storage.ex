@@ -80,7 +80,7 @@ defmodule Ecto.Mnesia.Storage do
   Checks that the Application environment for `mnesia_dir` is of
   a correct type.
   """
-  def check_mnesia_dir() do
+  def check_mnesia_dir do
     dir = Application.get_env(:mnesia, :dir, nil)
     case dir do
       nil -> Logger.error "Mnesia dir is not set. Mnesia will not work."
