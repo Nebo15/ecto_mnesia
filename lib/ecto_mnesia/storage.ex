@@ -38,10 +38,10 @@ defmodule Ecto.Mnesia.Storage do
   def storage_up(config) do
     config = conf(config)
 
-    IO.puts "==> Setting Mnesia schema table copy type"
+    Logger.info "==> Setting Mnesia schema table copy type"
     Mnesia.change_table_copy_type(:schema, config[:host], config[:storage_type])
 
-    IO.puts "==> Ensuring Mnesia schema exists"
+    Logger.info "==> Ensuring Mnesia schema exists"
     case Mnesia.create_schema([config[:host]]) do
       {:error, {_, {:already_exists, _}}} -> {:error, :already_up}
       :ok -> :ok
