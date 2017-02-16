@@ -44,6 +44,9 @@ defmodule Ecto.Mnesia.Storage do
     Logger.info "==> Ensuring Mnesia schema exists"
     case Mnesia.create_schema([config[:host]]) do
       {:error, {_, {:already_exists, _}}} -> {:error, :already_up}
+      {:error, reason} ->
+          Logger.error "create_schema failed with reason #{inspect reason}"
+          {:error, :unknown}
       :ok -> :ok
     end
   end
