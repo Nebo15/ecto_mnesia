@@ -129,7 +129,7 @@ defmodule Ecto.Adapters.MnesiaTest do
 
   describe "update" do
     setup do
-      {:ok, loan} = %SellOffer{loan_id: "hello", loan_changes: ["old_application"]}
+      {:ok, loan} = %SellOffer{loan_id: "hello", loan_changes: ["old_application"], age: 11}
       |> TestRepo.insert
 
       %{loan: loan}
@@ -153,6 +153,29 @@ defmodule Ecto.Adapters.MnesiaTest do
       assert inserted_at
       assert loan.updated_at != updated_at
       assert updated_at > loan.updated_at
+    end
+
+    test "with nil value", %{loan: loan} do
+      changeset = loan
+      |> Ecto.Changeset.change([age: nil])
+
+      assert {:ok, schema} = changeset
+      |> TestRepo.update
+
+      assert %SellOffer{
+        id: id,
+        age: nil,
+        inserted_at: inserted_at,
+        updated_at: updated_at
+      } = schema
+
+      assert loan.id == id
+      assert inserted_at
+      assert loan.updated_at != updated_at
+      assert updated_at > loan.updated_at
+
+      query = from so in SellOffer, where: so.id == ^loan.id
+      assert %SellOffer{age: nil} = query |> TestRepo.one()
     end
 
     test "invalid changeset" do

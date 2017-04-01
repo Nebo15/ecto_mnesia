@@ -48,32 +48,44 @@ defmodule Ecto.Mnesia.Table do
   You can partially update records by replacing values that you don't want to touch with `nil` values.
   This function will automatically merge changes stored in Mnesia and update.
   """
-  def update(table, key, record, _opts \\ []) when is_tuple(record) do
+  def update(table, key, changes, _opts \\ []) when is_list(changes) do
     table = table |> get_name()
     transaction(fn ->
       case _get(table, key, :write) do
         nil ->
           {:error, :not_found}
         stored_record ->
-          _insert(table, merge_records(stored_record, record))
+          _insert(table, update_record(stored_record, changes))
       end
     end)
   end
 
-  defp merge_records(v1, v2) do
-    v1 = Tuple.to_list(v1)
-    v2 = Tuple.to_list(v2)
+  defp update_record(record, changes) do
+    data = Tuple.to_list(record)
 
-    {_i, merged} = v1
-    |> Enum.reduce({0, []}, fn el, {i, acc} ->
-      case Enum.at(v2, i) do
-        nil -> {i + 1, acc ++ [el]}
-        val -> {i + 1, acc ++ [val]}
-      end
+    changes
+    |> Enum.reduce(data, fn
+      {index, value}, record ->
+        List.replace_at(record, index + 1, value)
+      {index, :inc, value}, record ->
+        List.update_at(record, index + 1, fn
+          numeric when is_number(numeric) or is_float(numeric) ->
+            numeric + value
+          nil ->
+            value
+        end)
+      {index, :push, value}, record ->
+        List.update_at(record, index + 1, fn
+          list when is_list(list) -> list ++ [value]
+          nil -> [value]
+        end)
+      {index, :pull, value}, record ->
+        List.update_at(record, index + 1, fn
+          list when is_list(list) -> Enum.filter(list, &(&1 != value))
+          nil -> []
+        end)
     end)
-
-    merged
-    |> List.to_tuple
+    |> List.to_tuple()
   end
 
   @doc """

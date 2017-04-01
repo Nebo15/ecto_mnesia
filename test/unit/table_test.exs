@@ -84,10 +84,8 @@ defmodule Ecto.Mnesia.TableTest do
   describe "update record" do
     test "existing" do
       Table.insert(@test_table, @test_record)
-      update = {:sell_offer, @test_record_key, 345,
-                nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-                nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 
+      update = [{1, 345}]
       assert {:ok, _} = Table.update(@test_table, @test_record_key, update)
 
       assert 345 == @test_table
@@ -95,11 +93,20 @@ defmodule Ecto.Mnesia.TableTest do
       |> elem(2)
     end
 
+    test "existing with nil" do
+      Table.insert(@test_table, @test_record)
+      update = [{1, nil}]
+
+      assert {:ok, _} = Table.update(@test_table, @test_record_key, update)
+
+      assert nil ==
+        @test_table
+        |> Table.get(@test_record_key)
+        |> elem(2)
+    end
+
     test "not existing" do
-      assert {:error, :not_found} == Table.update(@test_table, @test_record_key,
-        {:sell_offer, @test_record_key, 345,
-         nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil,
-         nil, nil, nil, nil, nil, nil, nil, nil, nil, nil})
+      assert {:error, :not_found} == Table.update(@test_table, @test_record_key, [{1, 345}])
     end
   end
 

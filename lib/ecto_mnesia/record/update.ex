@@ -5,69 +5,53 @@ defmodule Ecto.Mnesia.Record.Update do
   alias Ecto.Mnesia.Record.Context
 
   @doc """
+  Build am update statement from Keyword for `Ecto.Mnesia.Table.update/4`.
+  """
+  def from_keyword(_schema, _table, params, %Context{table: %Context.Table{structure: structure, name: name}}) do
+    Enum.map(params, fn {key, value} ->
+      case Keyword.get(structure, key) do
+        {i, _} -> {i, value}
+        nil -> raise ArgumentError, "Field `#{inspect key}` does not exist in table `#{inspect name}`"
+      end
+    end)
+  end
+
+  @doc """
   Update record by a `Ecto.Query.updates` instructions.
   """
-  def update_record(record, [], _sources, _context), do: record
-  def update_record(record, [%Ecto.Query.QueryExpr{expr: expr} | expr_t], sources, context) do
-    record
+  def update_record(exprs, sources, context), do: update_record([], exprs, sources, context)
+  def update_record(updates, [], _sources, _context), do: updates
+  def update_record(updates, [%Ecto.Query.QueryExpr{expr: expr} | expr_t], sources, context) do
+    updates
     |> apply_rules(expr, sources, context)
     |> update_record(expr_t, sources, context)
   end
 
-  defp apply_rules(record, [], _sources, _context), do: record
-  defp apply_rules(record, [rule | rules_t], sources, context) do
-    record
+  defp apply_rules(updates, [], _sources, _context), do: updates
+  defp apply_rules(updates, [rule | rules_t], sources, context) do
+    updates
     |> apply_conditions(rule, sources, context)
     |> apply_rules(rules_t, sources, context)
   end
 
-  defp apply_conditions(record, {_, []}, _sources, _context), do: record
-  defp apply_conditions(record, {key, [con | conds_t]}, sources, context) do
-    record
+  defp apply_conditions(updates, {_, []}, _sources, _context), do: updates
+  defp apply_conditions(updates, {key, [con | conds_t]}, sources, context) do
+    updates
     |> apply_condition({key, con}, sources, context)
     |> apply_conditions({key, conds_t}, sources, context)
   end
 
-  defp apply_condition(record, {:set, {field, expr}}, sources, context) do
+  defp apply_condition(updates, {:set, {field, expr}}, sources, context) do
     index = Context.find_field_index!(field, context)
     value = Context.MatchSpec.unbind(expr, sources)
 
-    record
-    |> List.replace_at(index, value)
+    updates ++ [{index, value}]
   end
 
-  defp apply_condition(record, {:inc, {field, expr}}, sources, context) do
+  defp apply_condition(updates, {op, {field, expr}}, sources, context) when op in [:inc, :push, :pull] do
     index = Context.find_field_index!(field, context)
     value = Context.MatchSpec.unbind(expr, sources)
 
-    record
-    |> List.update_at(index, fn
-      numeric when is_number(numeric) or is_float(numeric) ->
-        numeric + value
-      nil ->
-        value
-    end)
-  end
-
-  defp apply_condition(record, {:push, {field, expr}}, sources, context) do
-    index = Context.find_field_index!(field, context)
-    value = Context.MatchSpec.unbind(expr, sources)
-
-    record
-    |> List.update_at(index, fn
-      list when is_list(list) -> list ++ [value]
-      nil -> [value]
-    end)
-  end
-
-  defp apply_condition(record, {:pull, {field, expr}}, sources, context) do
-    index = Context.find_field_index!(field, context)
-    value = Context.MatchSpec.unbind(expr, sources)
-
-    record
-    |> List.update_at(index, fn
-      list when is_list(list) -> Enum.filter(list, &(&1 != value))
-      nil -> []
-    end)
+    updates ++ [{index, op, value}]
   end
 end

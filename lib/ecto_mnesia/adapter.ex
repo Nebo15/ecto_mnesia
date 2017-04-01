@@ -104,16 +104,15 @@ defmodule Ecto.Mnesia.Adapter do
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
 
     table = table |> Table.get_name()
+
+    update = updates
+    |> Update.update_record(sources, context)
+
     Table.transaction(fn ->
       table
       |> Table.select(match_spec)
-      |> Enum.map(fn record ->
-        update = record
-        |> Update.update_record(updates, sources, context)
-        |> List.insert_at(0, table)
-        |> List.to_tuple()
-
-        {:ok, result} = Table.update(table, List.first(record), update)
+      |> Enum.map(fn [record_id|_] ->
+        {:ok, result} = Table.update(table, record_id, update)
         result
       end)
       |> return_all(ordering_fn, preprocess_fn, {limit, limit_fn}, opts)
@@ -282,8 +281,10 @@ defmodule Ecto.Mnesia.Adapter do
   def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: autogenerate_id},
              params, filter, _autogen, _opts) do
     pk = get_pk!(filter, autogenerate_id)
-    record = schema |> Record.new(table, params)
-    case table |> Table.update(pk, record) do
+    context = Context.new(table, schema)
+    update = Update.from_keyword(schema, table, params, context)
+
+    case table |> Table.update(pk, update) do
       {:ok, _record} -> {:ok, params}
       error -> error
     end
