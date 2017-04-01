@@ -27,11 +27,11 @@ Not supported features (create issue and vote if you need them):
 - Schemaless queries.
 - Composite primary keys.
 - Unique/all other constraints (including associations).
-- JOINs
+- JOINs.
 - min, max, avg and other aggregation functions.
 - Intevals.
 
-*In general*. This adapter is still not passing all Ecto integration tests and in active development. But it already can be helpful in simple use-cases.
+**In general**. This adapter is still not passing all Ecto integration tests and in active development. But it already can be helpful in simple use-cases.
 
 ## Why Mnesia?
 
