@@ -15,12 +15,17 @@ defmodule Ecto.Mnesia.Storage do
   @doc """
   Start the Mnesia database.
   """
-  def start, do: Mnesia.start
-
+  def start do
+    check_mnesia_dir()
+    Mnesia.start()
+  end
   @doc """
   Stop the Mnesia database.
   """
-  def stop, do: Mnesia.stop
+  def stop do
+    check_mnesia_dir()
+    Mnesia.stop
+  end
 
   @doc """
   Creates the storage given by options.
@@ -36,14 +41,18 @@ defmodule Ecto.Mnesia.Storage do
       storage_up(host: `Kernel.node`, storage_type: :disc_copies)
   """
   def storage_up(config) do
+    check_mnesia_dir()
     config = conf(config)
 
-    IO.puts "==> Setting Mnesia schema table copy type"
+    Logger.info "==> Setting Mnesia schema table copy type"
     Mnesia.change_table_copy_type(:schema, config[:host], config[:storage_type])
 
-    IO.puts "==> Ensuring Mnesia schema exists"
+    Logger.info "==> Ensuring Mnesia schema exists"
     case Mnesia.create_schema([config[:host]]) do
       {:error, {_, {:already_exists, _}}} -> {:error, :already_up}
+      {:error, reason} ->
+          Logger.error "create_schema failed with reason #{inspect reason}"
+          {:error, :unknown}
       :ok -> :ok
     end
   end
@@ -52,6 +61,7 @@ defmodule Ecto.Mnesia.Storage do
   Temporarily stops Mnesia, deletes schema and then brings it back up again.
   """
   def storage_down(config) do
+    check_mnesia_dir()
     config = conf(config)
     stop()
     Mnesia.delete_schema([config[:host]])
@@ -64,5 +74,23 @@ defmodule Ecto.Mnesia.Storage do
       storage_type: config[:storage_type] || @defaults[:storage_type]
     ]
     |> Confex.process_env()
+  end
+
+  @doc """
+  Checks that the Application environment for `mnesia_dir` is of
+  a correct type.
+  """
+  def check_mnesia_dir do
+    dir = Application.get_env(:mnesia, :dir, nil)
+    case dir do
+      nil ->
+        Logger.warn "Mnesia dir is not set. Mnesia use default path."
+      dir when is_binary(dir) ->
+        Logger.error "Mnesia dir is a binary. Mnesia requires a charlist, which is set with simple quotes ('')"
+      dir when is_list(dir) ->
+        :ok
+      _dir ->
+        Logger.error "Mnesia dir is not character list. Mnesia will not work. "
+    end
   end
 end
