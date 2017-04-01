@@ -83,11 +83,14 @@ defmodule Ecto.Mnesia.Storage do
   def check_mnesia_dir do
     dir = Application.get_env(:mnesia, :dir, nil)
     case dir do
-      nil -> Logger.error "Mnesia dir is not set. Mnesia will not work."
-      d when is_binary(d) ->
+      nil ->
+        Logger.warn "Mnesia dir is not set. Mnesia use default path."
+      dir when is_binary(dir) ->
         Logger.error "Mnesia dir is a binary. Mnesia requires a charlist, which is set with simple quotes ('')"
-      d when is_list(d) -> :ok
-      d -> Logger.error "Mnesia dir is not character list. Mnesia will not work. "
+      dir when is_list(dir) ->
+        :ok
+      _dir ->
+        Logger.error "Mnesia dir is not character list. Mnesia will not work. "
     end
   end
 end

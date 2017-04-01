@@ -122,6 +122,12 @@ It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be ins
       adapter: Ecto.Adapters.Mnesia
     ```
 
+  4. Optionally set custom Mnesia data dir (don't forget to create it):
+
+    ```elixir
+    config :mnesia, :dir, 'priv/data/mnesia'
+    ```
+
 The docs can be found at [https://hexdocs.pm/ecto_mnesia](https://hexdocs.pm/ecto_mnesia).
 
 ## Thanks

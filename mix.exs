@@ -6,7 +6,7 @@ defmodule Ecto.Mnesia.Mixfile do
   def project do
     [app: :ecto_mnesia,
      description: "Ecto adapter for Mnesia erlang term storage.",
-     package: package,
+     package: package(),
      version: @version,
      elixir: "~> 1.3",
      elixirc_paths: elixirc_paths(Mix.env),
@@ -44,10 +44,10 @@ defmodule Ecto.Mnesia.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:confex, "~> 1.4"},
+    [{:confex, "~> 1.5"},
      {:ecto, "~> 2.1.0"},
      {:ex_doc, ">= 0.0.0", only: [:dev, :test]},
-     {:excoveralls, "~> 0.5", only: [:dev, :test]},
+     {:excoveralls, ">= 0.5.0", only: [:dev, :test]},
      {:dogma, "> 0.1.0", only: [:dev, :test]},
      {:credo, ">= 0.4.8", only: [:dev, :test]}]
   end
