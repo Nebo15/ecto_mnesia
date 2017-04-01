@@ -183,7 +183,7 @@ defmodule Ecto.Adapters.MnesiaTest do
 
   describe "select" do
     setup do
-      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
+      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11, loan_changes: ["old_application", "new_application"]}
       |> TestRepo.insert
 
       {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
@@ -206,6 +206,15 @@ defmodule Ecto.Adapters.MnesiaTest do
     test "get_by/2", %{loan2: loan2} do
       assert %SellOffer{id: loan_id} = SellOffer |> TestRepo.get_by([id: loan2.id])
       assert loan2.id == loan_id
+    end
+
+    test "where item is in array" do
+      change = "new_application"
+
+      assert_raise RuntimeError, "Complex :in queries is not supported by the Mnesia adapter.", fn ->
+        from(so in SellOffer, where: ^change in so.loan_changes)
+        |> TestRepo.all()
+      end
     end
 
     test "structured" do

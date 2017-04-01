@@ -81,7 +81,7 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   end
 
   # `:in` is a special case when we need to expand it to multiple `:or`'s
-  def condition_expression({:in, [], [field, parameters]}, sources, context) do
+  def condition_expression({:in, [], [field, parameters]}, sources, context) when is_list(parameters) do
     field = condition_expression(field, sources, context)
 
     expr = parameters
@@ -97,6 +97,10 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
       |> List.insert_at(0, :or)
       |> List.to_tuple()
     end
+  end
+
+  def condition_expression({:in, [], [_field, _parameters]}, _sources, _context) do
+    raise RuntimeError, "Complex :in queries is not supported by the Mnesia adapter."
   end
 
   # Conditions that have one argument. Functions (is_nil, not).
