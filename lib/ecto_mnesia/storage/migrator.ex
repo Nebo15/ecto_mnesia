@@ -223,7 +223,8 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   # Altering function traverses Mnesia table on schema migrations and moves field values to persist them
   defp alter_fn(record, fields_before, fields_after, data_migrations \\ []) do
     record_name = elem(record, 0)
-    acc = 1..length(fields_after) |> Enum.map(fn _ -> nil end)
+    acc = Enum.map(1..length(fields_after), fn _ -> nil end)
+
     fields_after
     |> Enum.reduce(acc, fn field, acc ->
       old_index = find_field_index(fields_before, field, data_migrations)
