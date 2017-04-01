@@ -185,6 +185,31 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
       assert {:migration_test_table, 1, 123} == get_record()
     end
 
+    test "rename field" do
+      assert :ok == {:rename,
+        %Table{name: @test_table_name},
+        :id,
+        :new_id
+      }
+      |> run_migration
+
+      assert [:new_id, :my_field] == get_attributes()
+      assert {:migration_test_table, 1, 123} == get_record()
+    end
+
+    test "rename not existing field" do
+      assert_raise RuntimeError, "Field unknown_field not found", fn ->
+        assert :ok == {:alter,
+          %Table{name: @test_table_name},
+          [{:modify, :unknown_field, :string, []}]
+        }
+        |> run_migration
+      end
+
+      assert [:id, :my_field] == get_attributes()
+      assert {:migration_test_table, 1, 123} == get_record()
+    end
+
     test "delete field" do
       {:alter,
         %Table{name: @test_table_name},

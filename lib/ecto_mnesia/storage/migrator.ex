@@ -64,6 +64,32 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     end
   end
 
+  def execute(repo, {:rename, %Ecto.Migration.Table{name: table}, old_field, new_field}, _opts) do
+    ensure_pk_table!(repo)
+
+    table_attrs = try do
+      table |> Table.get_name() |> Mnesia.table_info(:attributes)
+    catch
+      :exit, {:aborted, _reason} -> []
+    end
+
+    new_table_attrs =
+      [{:rename, old_field, new_field}]
+      |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, table_attrs, :raise))
+      |> Enum.uniq()
+
+    renames = [{old_field, new_field}]
+
+    try do
+      case Mnesia.transform_table(table, &alter_fn(&1, table_attrs, new_table_attrs, renames), new_table_attrs) do
+        {:atomic, :ok} -> :ok
+        error -> error
+      end
+    catch
+      :exit, {:aborted, {:no_exists, {_, :record_name}}} -> raise "Table #{table} does not exists"
+    end
+  end
+
   def execute(_repo, {:drop, %Ecto.Migration.Table{name: table}}, _opts) do
     case Mnesia.delete_table(table) do
       {:atomic, :ok} -> :ok
@@ -152,6 +178,19 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     |> Enum.filter(&(&1 != field))
   end
 
+  defp reduce_fields({:rename, old_field, new_field}, fields, table_fields, on_not_found) do
+    if on_not_found == :raise and !field_exists?(table_fields, old_field) do
+      raise "Field #{old_field} not found"
+    end
+
+    case Enum.find_index(fields, &(&1 == old_field)) do
+      nil ->
+        if on_not_found == :raise, do: raise "Field #{old_field} not found", else: fields
+      index when is_number(index) ->
+        List.replace_at(fields, index, new_field)
+    end
+  end
+
   defp reduce_fields({:add, field, _type, _opts}, fields, _table_fields, on_duplicate) do
     if on_duplicate == :raise and field_exists?(fields, field) do
       raise "Duplicate field #{field}"
@@ -171,23 +210,35 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   defp field_exists?(table_fields, field), do: field in table_fields
 
   # Altering function traverses Mnesia table on schema migrations and moves field values to persist them
-  defp alter_fn(record, fields_before, fields_after) do
+  defp alter_fn(record, fields_before, fields_after, data_migrations \\ []) do
     record_name = record |> elem(0)
     acc = 1..length(fields_after) |> Enum.map(fn _ -> nil end)
     fields_after
     |> Enum.reduce(acc, fn field, acc ->
-      old_index = Enum.find_index(fields_before, &(&1 == field))
-      new_index = Enum.find_index(fields_after, &(&1 == field))
+      old_index = find_field_index(fields_before, field, data_migrations)
+      new_index = find_field_index(fields_after, field)
 
-      value = case old_index do
-        nil -> nil
-        index -> record |> elem(index + 1)
-      end
+      value =
+        case old_index do
+          nil -> nil
+          index -> elem(record, index + 1)
+        end
 
-      acc |> List.replace_at(new_index, value)
+      List.replace_at(acc, new_index, value)
     end)
     |> List.insert_at(0, record_name)
     |> List.to_tuple()
+  end
+
+  def find_field_index(fields, field),
+    do: Enum.find_index(fields, &(&1 == field))
+  def find_field_index(fields, field, data_migrations) do
+    case Enum.find(data_migrations, fn {_old_name, new_name} -> new_name == field end) do
+      {old_field, _new_field} ->
+        find_field_index(fields, old_field)
+      nil ->
+        find_field_index(fields, field)
+    end
   end
 
   defp ensure_pk_table!(repo) do
