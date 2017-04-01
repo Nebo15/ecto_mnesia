@@ -42,16 +42,14 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
 
   # Select wasn't present, so we select everything
   defp match_body(%Context{query: %Context.Query{select: select}} = context, _sources) when is_list(select) do
-    select
-    |> Enum.map(&Context.find_field_placeholder!(&1, context))
+    Enum.map(select, &Context.find_field_placeholder!(&1, context))
   end
 
   defp select_fields({:&, [], [0, fields, _]}, _sources), do: fields
   defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, _sources), do: [field]
   defp select_fields({:^, [], [_]} = expr, sources), do: [unbind(expr, sources)]
   defp select_fields(exprs, sources) when is_list(exprs) do
-    exprs
-    |> Enum.flat_map(&select_fields(&1, sources))
+    Enum.flat_map(exprs, &select_fields(&1, sources))
   end
 
   # Resolve params

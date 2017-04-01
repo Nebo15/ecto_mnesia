@@ -8,7 +8,7 @@ defmodule Ecto.Mnesia.Table do
   Insert a record into Mnesia table.
   """
   def insert(table, record, _opts \\ []) when is_tuple(record) do
-    table = table |> get_name()
+    table = get_name(table)
     transaction(fn ->
       key = record |> elem(1)
       case _get(table, key) do
@@ -29,7 +29,7 @@ defmodule Ecto.Mnesia.Table do
   Read record from Mnesia table.
   """
   def get(table, key, _opts \\ []) do
-    table = table |> get_name()
+    table = get_name(table)
     transaction(fn ->
       _get(table, key)
     end)
@@ -49,7 +49,7 @@ defmodule Ecto.Mnesia.Table do
   This function will automatically merge changes stored in Mnesia and update.
   """
   def update(table, key, changes, _opts \\ []) when is_list(changes) do
-    table = table |> get_name()
+    table = get_name(table)
     transaction(fn ->
       case _get(table, key, :write) do
         nil ->
@@ -92,7 +92,7 @@ defmodule Ecto.Mnesia.Table do
   Delete record from Mnesia table by key.
   """
   def delete(table, key, _opts \\ []) do
-    table = table |> get_name()
+    table = get_name(table)
     transaction(fn ->
       :ok = Mnesia.delete(table, key, :write)
       {:ok, key}
@@ -105,14 +105,14 @@ defmodule Ecto.Mnesia.Table do
   def select(table, match_spec, limit \\ nil)
 
   def select(table, match_spec, nil) do
-    table = table |> get_name()
+    table = get_name(table)
     transaction(fn ->
       Mnesia.select(table, match_spec, :read)
     end)
   end
 
   def select(table, match_spec, limit) do
-    table = table |> get_name()
+    table = get_name(table)
     transaction(fn ->
       {result, _context} = Mnesia.select(table, match_spec, limit, :read)
       result
@@ -197,7 +197,7 @@ defmodule Ecto.Mnesia.Table do
   """
   @spec first(atom) :: any | nil | no_return
   def first(table) do
-    table = table |> get_name()
+    table = get_name(table)
     case Mnesia.first(table) do
       :'$end_of_table' -> nil
       value -> value
@@ -209,7 +209,7 @@ defmodule Ecto.Mnesia.Table do
   """
   @spec next(atom, any) :: any | nil | no_return
   def next(table, key) do
-    table = table |> get_name()
+    table = get_name(table)
     case Mnesia.next(table, key) do
       :'$end_of_table' -> nil
       value -> value
@@ -222,7 +222,7 @@ defmodule Ecto.Mnesia.Table do
   """
   @spec prev(atom, any) :: any | nil | no_return
   def prev(table, key) do
-    table = table |> get_name()
+    table = get_name(table)
     case Mnesia.prev(table, key) do
       :'$end_of_table' -> nil
       value -> value
@@ -234,7 +234,7 @@ defmodule Ecto.Mnesia.Table do
   """
   @spec last(atom) :: any | nil | no_return
   def last(table) do
-    table = table |> get_name()
+    table = get_name(table)
     case Mnesia.last(table) do
       :'$end_of_table' -> nil
       value -> value
@@ -245,5 +245,5 @@ defmodule Ecto.Mnesia.Table do
   Get Mnesia table name by binary or atom representation.
   """
   def get_name(table) when is_atom(table), do: table
-  def get_name(table) when is_binary(table), do: table |> String.to_atom()
+  def get_name(table) when is_binary(table), do: String.to_atom(table)
 end

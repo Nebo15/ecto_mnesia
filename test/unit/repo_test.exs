@@ -189,23 +189,19 @@ defmodule Ecto.RepoTest do
   test "insert!, update!, insert_or_update! and delete! fail on invalid changeset" do
     invalid = %Ecto.Changeset{valid?: false, data: %SellOffer{}}
 
-    assert_raise Ecto.InvalidChangesetError,
-                 ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
       TestRepo.insert!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError,
-                 ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
       TestRepo.update!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError,
-                 ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
       TestRepo.insert_or_update!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError,
-                 ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
       TestRepo.delete!(invalid)
     end
   end

@@ -14,15 +14,17 @@ defmodule Ecto.Mnesia.Record.Context do
     do: table |> Atom.to_string() |> new(schema)
   def new(table, schema) when is_binary(table) and is_atom(schema) do
     table_name = table |> Table.get_name()
-    mnesia_attributes = case table_name |> Table.attributes() do
-      {:ok, name} -> name
-      {:error, :no_exists} -> []
-    end
+    mnesia_attributes =
+      case Table.attributes(table_name) do
+        {:ok, name} -> name
+        {:error, :no_exists} -> []
+      end
 
-    structure = 1..length(mnesia_attributes)
-    |> Enum.map(fn index ->
-      {Enum.at(mnesia_attributes, index - 1), {index - 1, String.to_atom("$#{index}")}}
-    end)
+    structure =
+      1..length(mnesia_attributes)
+      |> Enum.map(fn index ->
+        {Enum.at(mnesia_attributes, index - 1), {index - 1, String.to_atom("$#{index}")}}
+      end)
 
     %Context{
       table: %Context.Table{schema: schema, name: table_name, structure: structure},
