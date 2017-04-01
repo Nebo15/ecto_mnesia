@@ -128,13 +128,14 @@ defmodule Ecto.Mnesia.Table do
   Get list of attributes that defined in Mnesia schema.
   """
   def attributes(table) do
-    try do
-      name = table |> get_name() |> Mnesia.table_info(:attributes)
-      {:ok, name}
-    catch
-      :exit, {:aborted, {:no_exists, _, :attributes}} ->
-        {:error, :no_exists}
-    end
+    name = table
+    |> get_name()
+    |> Mnesia.table_info(:attributes)
+
+    {:ok, name}
+  catch
+    :exit, {:aborted, {:no_exists, _, :attributes}} ->
+      {:error, :no_exists}
   end
 
   @doc """
@@ -172,15 +173,13 @@ defmodule Ecto.Mnesia.Table do
   # Activity is hard to deal with because it doesn't return value in dirty context (exits),
   # and returns in a transactional context
   defp activity(context, fun) do
-    try do
       do_activity(context, fun)
-    catch
-      :exit, {:aborted, {:no_exists, [schema, _id]}} -> {:raise, "Schema #{inspect schema} does not exist"}
-      :exit, {:aborted, {:no_exists, schema}} -> {:raise, "Schema #{inspect schema} does not exist"}
-      :exit, {:aborted, :rollback} -> {:error, :rollback}
-      :exit, {:aborted, reason} -> {:error, reason, System.stacktrace()}
-      :exit, reason -> {:error, reason, System.stacktrace()}
-    end
+  catch
+    :exit, {:aborted, {:no_exists, [schema, _id]}} -> {:raise, "Schema #{inspect schema} does not exist"}
+    :exit, {:aborted, {:no_exists, schema}} -> {:raise, "Schema #{inspect schema} does not exist"}
+    :exit, {:aborted, :rollback} -> {:error, :rollback}
+    :exit, {:aborted, reason} -> {:error, reason, System.stacktrace()}
+    :exit, reason -> {:error, reason, System.stacktrace()}
   end
 
   defp do_activity(context, fun) do
