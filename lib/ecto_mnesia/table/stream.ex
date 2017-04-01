@@ -1,9 +1,9 @@
-defmodule Ecto.Mnesia.Table.Stream do
+defmodule EctoMnesia.Table.Stream do
   @moduledoc """
   Stream implementation for Mnesia table.
   """
   alias __MODULE__, as: Stream
-  alias Ecto.Mnesia.Table
+  alias EctoMnesia.Table
 
   defstruct table: nil
 
@@ -52,7 +52,7 @@ defmodule Ecto.Mnesia.Table.Stream do
 
   defimpl Enumerable do
     def reduce(stream, acc, fun) do
-      Ecto.Mnesia.Table.Stream.reduce(stream, acc, fun)
+      EctoMnesia.Table.Stream.reduce(stream, acc, fun)
     end
 
     def count(_) do

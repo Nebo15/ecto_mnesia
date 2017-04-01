@@ -1,9 +1,9 @@
-defmodule Ecto.Mnesia.Record.Context do
+defmodule EctoMnesia.Record.Context do
   @moduledoc """
   Context stores `table`, `query` and `match_spec` that can be used for conversions between schemas and Mnesia records.
   """
-  alias Ecto.Mnesia.Table
-  alias Ecto.Mnesia.Record.Context
+  alias EctoMnesia.Table
+  alias EctoMnesia.Record.Context
 
   defstruct table: %Context.Table{}, query: %Context.Query{}, match_spec: %Context.MatchSpec{}
 

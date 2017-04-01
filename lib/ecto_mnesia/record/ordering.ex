@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Record.Ordering do
+defmodule EctoMnesia.Record.Ordering do
   @moduledoc """
   This module emulates `query.order_bys` behavior, because Mnesia doesn't have native support for result ordering.
   """

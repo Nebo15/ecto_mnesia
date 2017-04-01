@@ -21,14 +21,14 @@ Code.require_file "../deps/ecto/integration_test/support/schemas.exs", __DIR__
 Code.require_file "../deps/ecto/integration_test/support/types.exs", __DIR__
 
 Application.put_env(:ecto, Ecto.Integration.TestRepo,
-  adapter: Ecto.Adapters.Mnesia)
+  adapter: EctoMnesia.Adapter)
 
 defmodule Ecto.Integration.TestRepo do
   use Ecto.Integration.Repo, otp_app: :ecto
 end
 
 Application.put_env(:ecto, Ecto.Integration.PoolRepo,
-  adapter: Ecto.Adapters.Mnesia)
+  adapter: EctoMnesia.Adapter)
 
 defmodule Ecto.Integration.PoolRepo do
   use Ecto.Integration.Repo, otp_app: :ecto
@@ -61,12 +61,12 @@ defmodule Ecto.Integration.Case do
   end
 end
 
-{:ok, _} = Ecto.Adapters.Mnesia.ensure_all_started(Ecto.Integration.TestRepo, :temporary)
+{:ok, _} = EctoMnesia.Adapter.ensure_all_started(Ecto.Integration.TestRepo, :temporary)
 
 # Load up the repository, start it, and run migrations
-_ = Ecto.Adapters.Mnesia.storage_down(Ecto.Integration.TestRepo.config)
-_ = Ecto.Adapters.Mnesia.storage_up(Ecto.Integration.TestRepo.config)
-_ = Ecto.Mnesia.Storage.storage_up(TestRepo.config)
+_ = EctoMnesia.Adapter.storage_down(Ecto.Integration.TestRepo.config)
+_ = EctoMnesia.Adapter.storage_up(Ecto.Integration.TestRepo.config)
+_ = EctoMnesia.Storage.storage_up(TestRepo.config)
 
 {:ok, _pid} = Ecto.Integration.TestRepo.start_link
 {:ok, _pid} = Ecto.Integration.PoolRepo.start_link

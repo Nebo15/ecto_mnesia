@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Record.Context.MatchSpec do
+defmodule EctoMnesia.Record.Context.MatchSpec do
   @moduledoc """
   This module provides a context that is able to rebuild Mnesia `match_spec` by `Ecto.Query` AST whenever new query
   is assigned to a context.
@@ -7,7 +7,7 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
     - [QLC](http://erlang.org/doc/man/qlc.html)
     - [Match Specification](http://erlang.org/doc/apps/erts/match_spec.html)
   """
-  alias Ecto.Mnesia.Record.Context
+  alias EctoMnesia.Record.Context
 
   defstruct head: [], conditions: [], body: []
 

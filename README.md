@@ -112,7 +112,7 @@ It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be ins
 
     ```elixir
     def deps do
-      [{:ecto_mnesia, "~> 0.8.0"}]
+      [{:ecto_mnesia, "~> 0.9.0"}]
     end
     ```
 
@@ -124,11 +124,11 @@ It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be ins
     end
     ```
 
-  3. Use `Ecto.Adapters.Mnesia` as your `Ecto.Repo` adapter:
+  3. Use `EctoMnesia.Adapter` as your `Ecto.Repo` adapter:
 
     ```elixir
     config :my_app, MyRepo,
-      adapter: Ecto.Adapters.Mnesia
+      adapter: EctoMnesia.Adapter
     ```
 
   4. Optionally set custom Mnesia data dir (don't forget to create it):

@@ -1,9 +1,9 @@
-defmodule Ecto.Mnesia.Context.MatchSpecTest do
+defmodule EctoMnesia.Context.MatchSpecTest do
   use ExUnit.Case, async: true
   require Logger
   import Ecto.Query
   import Support.EvalHelpers
-  alias Ecto.Mnesia.Record.Context
+  alias EctoMnesia.Record.Context
 
   @pk_field_id :"$1"
   @status_field_id :"$9"

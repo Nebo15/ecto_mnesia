@@ -1,5 +1,5 @@
 Application.put_env :ecto_mnesia, TestRepo,
-  adapter: Ecto.Adapters.Mnesia
+  adapter: EctoMnesia.Adapter
 
 defmodule SellOffer do
   use Ecto.Schema

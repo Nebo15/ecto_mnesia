@@ -1,11 +1,11 @@
-defmodule Ecto.Mnesia.Storage.MigratorTest do
+defmodule EctoMnesia.Storage.MigratorTest do
   use ExUnit.Case, async: true
   require Logger
 
   alias :mnesia, as: Mnesia
   alias Ecto.Migration.{Table, Index}
-  alias Ecto.Mnesia.Storage.Migrator
-  alias Ecto.Mnesia.Table, as: MnesiaTable
+  alias EctoMnesia.Storage.Migrator
+  alias EctoMnesia.Table, as: MnesiaTable
 
   @test_table_name :migration_test_table
   @test_record_key 1

@@ -1,11 +1,11 @@
-defmodule Ecto.Mnesia.Record.Update do
+defmodule EctoMnesia.Record.Update do
   @moduledoc """
   This module decodes `query.updates` AST (from `Ecto.Query`) and applies all changes on a Mnesia record.
   """
-  alias Ecto.Mnesia.Record.Context
+  alias EctoMnesia.Record.Context
 
   @doc """
-  Build am update statement from Keyword for `Ecto.Mnesia.Table.update/4`.
+  Build am update statement from Keyword for `EctoMnesia.Table.update/4`.
   """
   def from_keyword(_schema, _table, params, %Context{table: %Context.Table{structure: structure, name: name}}) do
     Enum.map(params, fn {key, value} ->

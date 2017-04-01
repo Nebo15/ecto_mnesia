@@ -1,4 +1,4 @@
-defmodule Ecto.Adapters.MnesiaTest do
+defmodule EctoMnesia.AdapterTest do
   use ExUnit.Case
   require Logger
   import Ecto.Query, only: [from: 2]
@@ -262,7 +262,7 @@ defmodule Ecto.Adapters.MnesiaTest do
       query = from so in SellOffer, update: [set: [status: "updated", guaranteed: true], inc: [age: 1]]
 
       assert {3, nil} == TestRepo.update_all(query, [])
-      assert 3 == Ecto.Mnesia.Table.count(:sell_offer)
+      assert 3 == EctoMnesia.Table.count(:sell_offer)
       assert [
         %SellOffer{status: "updated", guaranteed: true, age: age1},
         %SellOffer{status: "updated", guaranteed: true, age: age2},
@@ -281,7 +281,7 @@ defmodule Ecto.Adapters.MnesiaTest do
 
     test "by struct" do
       assert {3, nil} == TestRepo.update_all SellOffer, set: [status: "updated", guaranteed: true], inc: [age: 1]
-      assert 3 == Ecto.Mnesia.Table.count(:sell_offer)
+      assert 3 == EctoMnesia.Table.count(:sell_offer)
       assert [
         %SellOffer{status: "updated", guaranteed: true, age: age1},
         %SellOffer{status: "updated", guaranteed: true, age: age2},
@@ -327,18 +327,18 @@ defmodule Ecto.Adapters.MnesiaTest do
 
     test "by query" do
       assert {2, nil} == TestRepo.delete_all from(so in SellOffer, where: so.age < 20)
-      assert 1 == Ecto.Mnesia.Table.count(:sell_offer)
+      assert 1 == EctoMnesia.Table.count(:sell_offer)
     end
 
     test "return result" do
       # TODO: Return on delete
       assert {2, _} = TestRepo.delete_all from(so in SellOffer, where: so.age < 20), select: [:id, :age]
-      assert 1 == Ecto.Mnesia.Table.count(:sell_offer)
+      assert 1 == EctoMnesia.Table.count(:sell_offer)
     end
 
     test "by struct" do
       assert {3, nil} == TestRepo.delete_all(SellOffer)
-      assert 0 == Ecto.Mnesia.Table.count(:sell_offer)
+      assert 0 == EctoMnesia.Table.count(:sell_offer)
     end
   end
 
@@ -375,7 +375,7 @@ defmodule Ecto.Adapters.MnesiaTest do
   end
 
   test "stream is not supported" do
-    assert_raise ArgumentError, "stream/6 is not supported by adapter, use Ecto.Mnesia.Table.Stream.new/2 instead",
+    assert_raise ArgumentError, "stream/6 is not supported by adapter, use EctoMnesia.Table.Stream.new/2 instead",
       fn ->
         TestRepo.stream SellOffer
       end

@@ -1,7 +1,7 @@
-defmodule Ecto.Mnesia.TableTest do
+defmodule EctoMnesia.TableTest do
   use ExUnit.Case
   require Logger
-  alias Ecto.Mnesia.Table
+  alias EctoMnesia.Table
 
   @test_table :sell_offer
   @test_record_key 1

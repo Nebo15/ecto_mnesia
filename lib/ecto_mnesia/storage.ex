@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Storage do
+defmodule EctoMnesia.Storage do
   @moduledoc """
   This module provides interface to manage Mnesia state and records data structure.
   """

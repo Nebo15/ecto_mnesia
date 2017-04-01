@@ -1,4 +1,4 @@
-defmodule Ecto.Mnesia.Table do
+defmodule EctoMnesia.Table do
   @moduledoc """
   This module provides interface to perform CRUD and select operations on a Mnesia table.
   """
