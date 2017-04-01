@@ -103,9 +103,7 @@ defmodule Ecto.Mnesia.Adapter do
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
 
     table = Table.get_name(table)
-
-    update = updates
-    |> Update.update_record(sources, context)
+    update = Update.update_record(updates, sources, context)
 
     Table.transaction(fn ->
       table
@@ -177,8 +175,7 @@ defmodule Ecto.Mnesia.Adapter do
                  _header, rows, _on_conflict, _returning, _opts) do
     table = Table.get_name(table)
     result = Table.transaction(fn ->
-      rows
-      |> Enum.reduce({0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
+      Enum.reduce(rows, {0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
     end)
 
     case result do
@@ -230,8 +227,7 @@ defmodule Ecto.Mnesia.Adapter do
   # Generate new sequenced primary key for table
   defp put_new_pk(params, pk_field, table) when is_list(params) and is_atom(pk_field) do
     {_, params} =
-      params
-      |> Keyword.get_and_update(pk_field, fn
+      Keyword.get_and_update(params, pk_field, fn
         nil -> {nil, Table.next_id(table)}
         val -> {val, val}
       end)
@@ -281,7 +277,7 @@ defmodule Ecto.Mnesia.Adapter do
     context = Context.new(table, schema)
     update = Update.from_keyword(schema, table, params, context)
 
-    case table |> Table.update(pk, update) do
+    case Table.update(table, pk, update) do
       {:ok, _record} -> {:ok, params}
       error -> error
     end

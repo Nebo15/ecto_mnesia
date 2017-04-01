@@ -134,8 +134,7 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   def condition_expression(raw_value, sources, _context), do: unbind(raw_value, sources)
 
   def unbind({:^, [], [start_at, end_at]}, sources) do
-    sources
-    |> Enum.slice(Range.new(start_at, end_at))
+    Enum.slice(sources, Range.new(start_at, end_at))
   end
   def unbind({:^, [], [index]}, sources) do
     sources

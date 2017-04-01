@@ -12,9 +12,10 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   def execute(repo, {:create, %Ecto.Migration.Table{name: table, engine: type}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
-    table_attrs = instructions
-    |> Enum.reduce([], &reduce_fields(&1, &2, [], :skip))
-    |> Enum.uniq()
+    table_attrs =
+      instructions
+      |> Enum.reduce([], &reduce_fields(&1, &2, [], :skip))
+      |> Enum.uniq()
 
     case do_create_table(repo, table, type, table_attrs) do
       :ok -> :ok
@@ -25,15 +26,19 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   def execute(repo, {:create_if_not_exists, %Ecto.Migration.Table{name: table, engine: type}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
-    table_attrs = try do
-      table |> Table.get_name() |> Mnesia.table_info(:attributes)
-    catch
-      :exit, {:aborted, _reason} -> []
-    end
+    table_attrs =
+      try do
+        table
+        |> Table.get_name()
+        |> Mnesia.table_info(:attributes)
+      catch
+        :exit, {:aborted, _reason} -> []
+      end
 
-    new_table_attrs = instructions
-    |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, [], :skip))
-    |> Enum.uniq()
+    new_table_attrs =
+      instructions
+      |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, [], :skip))
+      |> Enum.uniq()
 
     case do_create_table(repo, table, type, new_table_attrs) do
       :ok -> :ok
@@ -44,15 +49,19 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   def execute(repo, {:alter, %Ecto.Migration.Table{name: table}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
-    table_attrs = try do
-      table |> Table.get_name() |> Mnesia.table_info(:attributes)
-    catch
-      :exit, {:aborted, _reason} -> []
-    end
+    table_attrs =
+      try do
+        table
+        |> Table.get_name()
+        |> Mnesia.table_info(:attributes)
+      catch
+        :exit, {:aborted, _reason} -> []
+      end
 
-    new_table_attrs = instructions
-    |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, table_attrs, :raise))
-    |> Enum.uniq()
+    new_table_attrs =
+      instructions
+      |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, table_attrs, :raise))
+      |> Enum.uniq()
 
     try do
       case Mnesia.transform_table(table, &alter_fn(&1, table_attrs, new_table_attrs), new_table_attrs) do
@@ -67,11 +76,14 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   def execute(repo, {:rename, %Ecto.Migration.Table{name: table}, old_field, new_field}, _opts) do
     ensure_pk_table!(repo)
 
-    table_attrs = try do
-      table |> Table.get_name() |> Mnesia.table_info(:attributes)
-    catch
-      :exit, {:aborted, _reason} -> []
-    end
+    table_attrs =
+      try do
+        table
+        |> Table.get_name()
+        |> Mnesia.table_info(:attributes)
+      catch
+        :exit, {:aborted, _reason} -> []
+      end
 
     new_table_attrs =
       [{:rename, old_field, new_field}]
@@ -174,8 +186,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
       raise "Field #{field} not found"
     end
 
-    fields
-    |> Enum.filter(&(&1 != field))
+    Enum.filter(fields, &(&1 != field))
   end
 
   defp reduce_fields({:rename, old_field, new_field}, fields, table_fields, on_not_found) do
@@ -211,7 +222,7 @@ defmodule Ecto.Mnesia.Storage.Migrator do
 
   # Altering function traverses Mnesia table on schema migrations and moves field values to persist them
   defp alter_fn(record, fields_before, fields_after, data_migrations \\ []) do
-    record_name = record |> elem(0)
+    record_name = elem(record, 0)
     acc = 1..length(fields_after) |> Enum.map(fn _ -> nil end)
     fields_after
     |> Enum.reduce(acc, fn field, acc ->
@@ -242,11 +253,12 @@ defmodule Ecto.Mnesia.Storage.Migrator do
   end
 
   defp ensure_pk_table!(repo) do
-    res = try do
-      Mnesia.table_info(:size, @pk_table_name)
-    catch
-      :exit, {:aborted, {:no_exists, :size, _}} -> :no_exists
-    end
+    res =
+      try do
+        Mnesia.table_info(:size, @pk_table_name)
+      catch
+        :exit, {:aborted, {:no_exists, :size, _}} -> :no_exists
+      end
 
     case res do
       :no_exists ->
@@ -257,5 +269,6 @@ defmodule Ecto.Mnesia.Storage.Migrator do
     end
   end
 
-  defp conf(repo), do: Ecto.Mnesia.Storage.conf(repo.config)
+  defp conf(repo),
+    do: Ecto.Mnesia.Storage.conf(repo.config)
 end

@@ -10,7 +10,7 @@ defmodule Ecto.Mnesia.Table do
   def insert(table, record, _opts \\ []) when is_tuple(record) do
     table = get_name(table)
     transaction(fn ->
-      key = record |> elem(1)
+      key = elem(record, 1)
       case _get(table, key) do
         nil -> _insert(table, record)
         _ -> {:error, :already_exists}

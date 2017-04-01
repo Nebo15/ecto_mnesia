@@ -13,7 +13,7 @@ defmodule Ecto.Mnesia.Record.Context do
   def new(table, schema) when is_atom(table),
     do: table |> Atom.to_string() |> new(schema)
   def new(table, schema) when is_binary(table) and is_atom(schema) do
-    table_name = table |> Table.get_name()
+    table_name = Table.get_name(table)
     mnesia_attributes =
       case Table.attributes(table_name) do
         {:ok, name} -> name
@@ -21,8 +21,7 @@ defmodule Ecto.Mnesia.Record.Context do
       end
 
     structure =
-      1..length(mnesia_attributes)
-      |> Enum.map(fn index ->
+      Enum.map(1..length(mnesia_attributes), fn index ->
         {Enum.at(mnesia_attributes, index - 1), {index - 1, String.to_atom("$#{index}")}}
       end)
 
@@ -66,7 +65,7 @@ defmodule Ecto.Mnesia.Record.Context do
 
   # Builds new match_spec on query updates
   defp build_match_spec(context, query),
-    do: context |> Context.MatchSpec.update(query)
+    do: Context.MatchSpec.update(context, query)
 
   @doc """
   Returns MatchSpec record field index by a `field` name.
@@ -99,7 +98,6 @@ defmodule Ecto.Mnesia.Record.Context do
   Returns MatchSpec body placeholders for all fields in a context.
   """
   def get_fields_placeholders(%Context{table: %Context.Table{structure: structure}}) do
-    structure
-    |> Enum.map(fn {_name, {_index, placeholder}} -> placeholder end)
+    Enum.map(structure, fn {_name, {_index, placeholder}} -> placeholder end)
   end
 end

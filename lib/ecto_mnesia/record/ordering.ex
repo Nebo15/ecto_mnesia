@@ -11,8 +11,7 @@ defmodule Ecto.Mnesia.Record.Ordering do
   def get_ordering_fn(nil), do: &(&1)
   def get_ordering_fn(ordering) do
     fn data ->
-      data
-      |> Enum.sort(&sort(&1, &2, ordering))
+      Enum.sort(data, &sort(&1, &2, ordering))
     end
   end
 

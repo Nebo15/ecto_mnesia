@@ -8,7 +8,7 @@ defmodule Ecto.Mnesia.Table.Stream do
   defstruct table: nil
 
   def new(table) do
-    table = table |> Table.get_name()
+    table = Table.get_name(table)
     stream = %Stream{table: table}
 
     case first(stream) do
