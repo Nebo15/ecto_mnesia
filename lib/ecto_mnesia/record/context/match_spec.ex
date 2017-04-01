@@ -42,16 +42,14 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
 
   # Select wasn't present, so we select everything
   defp match_body(%Context{query: %Context.Query{select: select}} = context, _sources) when is_list(select) do
-    select
-    |> Enum.map(&Context.find_field_placeholder!(&1, context))
+    Enum.map(select, &Context.find_field_placeholder!(&1, context))
   end
 
   defp select_fields({:&, [], [0, fields, _]}, _sources), do: fields
   defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, _sources), do: [field]
   defp select_fields({:^, [], [_]} = expr, sources), do: [unbind(expr, sources)]
   defp select_fields(exprs, sources) when is_list(exprs) do
-    exprs
-    |> Enum.flat_map(&select_fields(&1, sources))
+    Enum.flat_map(exprs, &select_fields(&1, sources))
   end
 
   # Resolve params
@@ -81,7 +79,7 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   end
 
   # `:in` is a special case when we need to expand it to multiple `:or`'s
-  def condition_expression({:in, [], [field, parameters]}, sources, context) do
+  def condition_expression({:in, [], [field, parameters]}, sources, context) when is_list(parameters) do
     field = condition_expression(field, sources, context)
 
     expr = parameters
@@ -97,6 +95,10 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
       |> List.insert_at(0, :or)
       |> List.to_tuple()
     end
+  end
+
+  def condition_expression({:in, [], [_field, _parameters]}, _sources, _context) do
+    raise RuntimeError, "Complex :in queries is not supported by the Mnesia adapter."
   end
 
   # Conditions that have one argument. Functions (is_nil, not).
@@ -132,8 +134,7 @@ defmodule Ecto.Mnesia.Record.Context.MatchSpec do
   def condition_expression(raw_value, sources, _context), do: unbind(raw_value, sources)
 
   def unbind({:^, [], [start_at, end_at]}, sources) do
-    sources
-    |> Enum.slice(Range.new(start_at, end_at))
+    Enum.slice(sources, Range.new(start_at, end_at))
   end
   def unbind({:^, [], [index]}, sources) do
     sources

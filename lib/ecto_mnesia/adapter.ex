@@ -17,8 +17,7 @@ defmodule Ecto.Mnesia.Adapter do
   Ensure all applications necessary to run the adapter are started.
   """
   def ensure_all_started(_repo, type) do
-    @required_apps
-    |> Enum.each(fn app ->
+    Enum.each(@required_apps, fn app ->
       {:ok, _} = Application.ensure_all_started(app, type)
     end)
 
@@ -42,10 +41,10 @@ defmodule Ecto.Mnesia.Adapter do
   Prepares are called by Ecto before `execute/6` methods.
   """
   def prepare(operation, %Ecto.Query{from: {table, schema}, order_bys: order_bys, limit: limit} = query) do
-    ordering_fn = order_bys |> Ordering.get_ordering_fn()
-    limit = limit |> get_limit()
+    ordering_fn = Ordering.get_ordering_fn(order_bys)
+    limit =  get_limit(limit)
     limit_fn = if limit == nil, do: &(&1), else: &Enum.take(&1, limit)
-    context = table |> Context.new(schema)
+    context = Context.new(table, schema)
     {:nocache, {operation, query, {limit, limit_fn}, context, ordering_fn}}
   end
 
@@ -55,7 +54,7 @@ defmodule Ecto.Mnesia.Adapter do
   def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
                       {:nocache, {:all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
                       sources, preprocess, _opts) do
-    context = context |> Context.assign_query(query, sources)
+    context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     Logger.debug("Selecting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
 
@@ -74,12 +73,12 @@ defmodule Ecto.Mnesia.Adapter do
   def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
                       {:nocache, {:delete_all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
                       sources, preprocess, opts) do
-    context = context |> Context.assign_query(query, sources)
+    context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
     Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
 
-    table = table |> Table.get_name()
+    table = Table.get_name(table)
     Table.transaction(fn ->
       table
       |> Table.select(match_spec)
@@ -98,22 +97,19 @@ defmodule Ecto.Mnesia.Adapter do
                       {:nocache, {:update_all,
                         %Ecto.Query{updates: updates} = query, {limit, limit_fn}, context, ordering_fn}},
                       sources, preprocess, opts) do
-    context = context |> Context.assign_query(query, sources)
+    context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
     Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
 
-    table = table |> Table.get_name()
+    table = Table.get_name(table)
+    update = Update.update_record(updates, sources, context)
+
     Table.transaction(fn ->
       table
       |> Table.select(match_spec)
-      |> Enum.map(fn record ->
-        update = record
-        |> Update.update_record(updates, sources, context)
-        |> List.insert_at(0, table)
-        |> List.to_tuple()
-
-        {:ok, result} = Table.update(table, List.first(record), update)
+      |> Enum.map(fn [record_id|_] ->
+        {:ok, result} = Table.update(table, record_id, update)
         result
       end)
       |> return_all(ordering_fn, preprocess_fn, {limit, limit_fn}, opts)
@@ -156,15 +152,12 @@ defmodule Ecto.Mnesia.Adapter do
 
   defp split_and_not_nil(rest, 0, true, _acc), do: {nil, rest}
   defp split_and_not_nil(rest, 0, false, acc), do: {:lists.reverse(acc), rest}
-
   defp split_and_not_nil([nil|t], count, all_nil?, acc) do
     split_and_not_nil(t, count - 1, all_nil?, [nil|acc])
   end
-
   defp split_and_not_nil([h|t], count, _all_nil?, acc) do
     split_and_not_nil(t, count - 1, false, [h|acc])
   end
-
 
   @doc """
   Insert Ecto Schema struct to Mnesia database.
@@ -180,10 +173,9 @@ defmodule Ecto.Mnesia.Adapter do
   # TODO: deal with `opts`: `on_conflict` and `returning`
   def insert_all(repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
                  _header, rows, _on_conflict, _returning, _opts) do
-    table = table |> Table.get_name()
+    table = Table.get_name(table)
     result = Table.transaction(fn ->
-      rows
-      |> Enum.reduce({0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
+      Enum.reduce(rows, {0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
     end)
 
     case result do
@@ -207,7 +199,7 @@ defmodule Ecto.Mnesia.Adapter do
 
   # Insert schema without primary keys
   defp do_insert(table, schema, nil, params) do
-    record = schema |> Record.new(table, params)
+    record = Record.new(schema, table, params)
 
     case Table.insert(table, record) do
       {:ok, ^record} ->
@@ -219,8 +211,8 @@ defmodule Ecto.Mnesia.Adapter do
 
   # Insert schema with auto-generating primary key value
   defp do_insert(table, schema, {pk_field, _pk_type}, params) do
-    params = params |> put_new_pk(pk_field, table)
-    record = schema |> Record.new(table, params)
+    params = put_new_pk(params, pk_field, table)
+    record = Record.new(schema, table, params)
 
     case Table.insert(table, record) do
       {:ok, ^record} ->
@@ -234,11 +226,11 @@ defmodule Ecto.Mnesia.Adapter do
 
   # Generate new sequenced primary key for table
   defp put_new_pk(params, pk_field, table) when is_list(params) and is_atom(pk_field) do
-    {_, params} = params
-    |> Keyword.get_and_update(pk_field, fn
-      nil -> {nil, Table.next_id(table)}
-      val -> {val, val}
-    end)
+    {_, params} =
+      Keyword.get_and_update(params, pk_field, fn
+        nil -> {nil, Table.next_id(table)}
+        val -> {val, val}
+      end)
 
     params
   end
@@ -282,8 +274,10 @@ defmodule Ecto.Mnesia.Adapter do
   def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: autogenerate_id},
              params, filter, _autogen, _opts) do
     pk = get_pk!(filter, autogenerate_id)
-    record = schema |> Record.new(table, params)
-    case table |> Table.update(pk, record) do
+    context = Context.new(table, schema)
+    update = Update.from_keyword(schema, table, params, context)
+
+    case Table.update(table, pk, update) do
       {:ok, _record} -> {:ok, params}
       error -> error
     end

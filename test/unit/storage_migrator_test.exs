@@ -33,57 +33,56 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
 
   describe "create table" do
     test "when table does not exist" do
-      assert :ok == {:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
-      |> run_migration
+      assert :ok ==
+        run_migration({
+          :create,
+          %Table{name: @test_table_name},
+          [{:add, :id, :integer, []},
+           {:add, :my_field, :integer, []}]
+        })
 
       assert [:id, :my_field] == get_attributes()
     end
 
     test "when table exists" do
-      migration = {:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
+      migration =
+        {:create,
+          %Table{name: @test_table_name},
+          [{:add, :id, :integer, []},
+           {:add, :my_field, :integer, []}]
+        }
 
-      migration
-      |> run_migration
+      run_migration(migration)
 
       assert_raise RuntimeError, "Table migration_test_table already exists", fn ->
-        migration
-        |> run_migration
+        run_migration(migration)
       end
     end
   end
 
   describe "create table if not exists" do
     test "when table does not exist" do
-      assert :ok == {:create_if_not_exists,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
-      |> run_migration
+      assert :ok ==
+        run_migration({
+          :create_if_not_exists,
+          %Table{name: @test_table_name},
+          [{:add, :id, :integer, []},
+           {:add, :my_field, :integer, []}]
+        })
 
       assert [:id, :my_field] == get_attributes()
     end
 
     test "when table exists" do
-      migration = {:create_if_not_exists,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
+      migration =
+        {:create_if_not_exists,
+          %Table{name: @test_table_name},
+          [{:add, :id, :integer, []},
+           {:add, :my_field, :integer, []}]
+        }
 
-      assert :ok == migration
-      |> run_migration
-
-      assert :ok == migration
-      |> run_migration
+      assert :ok == run_migration(migration)
+      assert :ok == run_migration(migration)
 
       assert [:id, :my_field] == get_attributes()
     end
@@ -91,34 +90,35 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
 
   describe "alter table" do
     test "when table does not exist" do
-      migration = {:alter,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
+      migration =
+        {:alter,
+          %Table{name: @test_table_name},
+          [{:add, :id, :integer, []},
+           {:add, :my_field, :integer, []}]
+        }
 
       assert_raise RuntimeError, "Table migration_test_table does not exists", fn ->
-        migration
-        |> run_migration
+        run_migration(migration)
       end
     end
 
     test "when table exists" do
-      migration = {:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
+      migration =
+        {:create,
+          %Table{name: @test_table_name},
+          [{:add, :id, :integer, []},
+           {:add, :my_field, :integer, []}]
+        }
 
-      migration
-      |> run_migration
+      run_migration(migration)
 
-      assert :ok == {:alter,
-        %Table{name: @test_table_name},
-        [{:add, :new_field, :integer, []},
-         {:add, :my_second_field, :integer, []}]
-      }
-      |> run_migration
+      assert :ok ==
+        run_migration({
+          :alter,
+          %Table{name: @test_table_name},
+          [{:add, :new_field, :integer, []},
+           {:add, :my_second_field, :integer, []}]
+        })
 
       assert [:id, :my_field, :new_field, :my_second_field] == get_attributes()
     end
@@ -126,23 +126,23 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
 
   describe "alter table fields" do
     setup do
-      {:create,
+      run_migration({
+        :create,
         %Table{name: @test_table_name},
         [{:add, :id, :integer, []},
          {:add, :my_field, :integer, []}]
-      }
-      |> run_migration
+      })
 
       MnesiaTable.insert(@test_table_name, {@test_table_name, @test_record_key, 123})
       :ok
     end
 
     test "add field" do
-      {:alter,
+      run_migration({
+        :alter,
         %Table{name: @test_table_name},
         [{:add, :new_field, :integer, []}]
-      }
-      |> run_migration
+      })
 
       assert [:id, :my_field, :new_field] == get_attributes()
       assert {:migration_test_table, 1, 123, nil} == get_record()
@@ -150,11 +150,11 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
 
     test "add duplicate field" do
       assert_raise RuntimeError, "Duplicate field my_field", fn ->
-        {:alter,
+        run_migration({
+          :alter,
           %Table{name: @test_table_name},
           [{:add, :my_field, :integer, []}]
-        }
-        |> run_migration
+        })
       end
 
       assert [:id, :my_field] == get_attributes()
@@ -162,11 +162,11 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
     end
 
     test "modify field" do
-      assert :ok == {:alter,
-        %Table{name: @test_table_name},
-        [{:modify, :id, :string, []}]
-      }
-      |> run_migration
+      assert :ok ==
+        run_migration({:alter,
+          %Table{name: @test_table_name},
+          [{:modify, :id, :string, []}]
+        })
 
       assert [:id, :my_field] == get_attributes()
       assert {:migration_test_table, 1, 123} == get_record()
@@ -174,11 +174,38 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
 
     test "modify not existing field" do
       assert_raise RuntimeError, "Field unknown_field not found", fn ->
-        assert :ok == {:alter,
+        assert :ok ==
+          run_migration({
+            :alter,
+            %Table{name: @test_table_name},
+            [{:modify, :unknown_field, :string, []}]
+          })
+      end
+
+      assert [:id, :my_field] == get_attributes()
+      assert {:migration_test_table, 1, 123} == get_record()
+    end
+
+    test "rename field" do
+      assert :ok ==
+        run_migration({:rename,
           %Table{name: @test_table_name},
-          [{:modify, :unknown_field, :string, []}]
-        }
-        |> run_migration
+          :id,
+          :new_id
+        })
+
+      assert [:new_id, :my_field] == get_attributes()
+      assert {:migration_test_table, 1, 123} == get_record()
+    end
+
+    test "rename not existing field" do
+      assert_raise RuntimeError, "Field unknown_field not found", fn ->
+        assert :ok ==
+          run_migration({
+            :alter,
+            %Table{name: @test_table_name},
+            [{:modify, :unknown_field, :string, []}]
+          })
       end
 
       assert [:id, :my_field] == get_attributes()
@@ -186,19 +213,19 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
     end
 
     test "delete field" do
-      {:alter,
+      run_migration({:alter,
         %Table{name: @test_table_name},
         [{:add, :new_field, :integer, []}]
-      }
-      |> run_migration
+      })
 
       assert {:migration_test_table, 1, 123, nil} == get_record()
 
-      assert :ok == {:alter,
-        %Table{name: @test_table_name},
-        [{:remove, :new_field}]
-      }
-      |> run_migration
+      assert :ok ==
+        run_migration({
+          :alter,
+          %Table{name: @test_table_name},
+          [{:remove, :new_field}]
+        })
 
       assert [:id, :my_field] == get_attributes()
       assert {:migration_test_table, 1, 123} == get_record()
@@ -206,11 +233,11 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
 
     test "delete not existing field" do
       assert_raise RuntimeError, "Field unknown_field not found", fn ->
-        assert :ok == {:alter,
-          %Table{name: @test_table_name},
-          [{:remove, :unknown_field}]
-        }
-        |> run_migration
+        assert :ok ==
+          run_migration({:alter,
+            %Table{name: @test_table_name},
+            [{:remove, :unknown_field}]
+          })
       end
 
       assert [:id, :my_field] == get_attributes()
@@ -221,30 +248,27 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
   describe "drop table" do
     test "when table does not exist" do
       assert_raise RuntimeError, "Table migration_test_table does not exists", fn ->
-        assert :ok == {:drop, %Table{name: @test_table_name}}
-        |> run_migration
+        assert :ok == run_migration({:drop, %Table{name: @test_table_name}})
       end
     end
 
     test "when table exists" do
-      migration = {:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
+      migration =
+        {:create,
+          %Table{name: @test_table_name},
+          [{:add, :id, :integer, []},
+           {:add, :my_field, :integer, []}]
+        }
 
-      migration
-      |> run_migration
+      run_migration(migration)
 
-      assert :ok == {:drop, %Table{name: @test_table_name}}
-      |> run_migration
+      assert :ok == run_migration({:drop, %Table{name: @test_table_name}})
     end
   end
 
   describe "drop table if exists" do
     test "when table does not exist" do
-      assert :ok == {:drop_if_exists, %Table{name: @test_table_name}}
-      |> run_migration
+      assert :ok == run_migration({:drop_if_exists, %Table{name: @test_table_name}})
     end
 
     test "when table exists" do
@@ -254,38 +278,31 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
          {:add, :my_field, :integer, []}]
       }
 
-      migration
-      |> run_migration
+      run_migration(migration)
 
-      assert :ok == {:drop_if_exists, %Table{name: @test_table_name}}
-      |> run_migration
+      assert :ok == run_migration({:drop_if_exists, %Table{name: @test_table_name}})
     end
   end
 
   describe "create index" do
     setup do
-      {:create,
+      run_migration({:create,
         %Table{name: @test_table_name},
         [{:add, :id, :integer, []},
          {:add, :my_field, :integer, []}]
-      }
-      |> run_migration
+      })
     end
 
     test "when index does not exist" do
-      assert [:ok] == {:create, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
+      assert [:ok] == run_migration({:create, %Index{table: @test_table_name, columns: [:my_field]}})
       assert [3] == get_indexes()
     end
 
     test "when index exists" do
-      {:create, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
+      run_migration({:create, %Index{table: @test_table_name, columns: [:my_field]}})
 
       assert_raise RuntimeError, "Index for field my_field in table migration_test_table already exists", fn ->
-        {:create, %Index{table: @test_table_name, columns: [:my_field]}}
-        |> run_migration
+        run_migration({:create, %Index{table: @test_table_name, columns: [:my_field]}})
       end
 
       assert [3] == get_indexes()
@@ -294,82 +311,63 @@ defmodule Ecto.Mnesia.Storage.MigratorTest do
 
   describe "create index if not exists" do
     setup do
-      {:create,
+      run_migration({:create,
         %Table{name: @test_table_name},
         [{:add, :id, :integer, []},
          {:add, :my_field, :integer, []}]
-      }
-      |> run_migration
+      })
     end
 
     test "when index does not exist" do
-      assert [:ok] == {:create_if_not_exists, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
+      assert [:ok] == run_migration({:create_if_not_exists, %Index{table: @test_table_name, columns: [:my_field]}})
       assert [3] == get_indexes()
     end
 
     test "when index exists" do
-      assert [:ok] == {:create_if_not_exists, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
-      assert [:ok] == {:create_if_not_exists, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
+      assert [:ok] == run_migration({:create_if_not_exists, %Index{table: @test_table_name, columns: [:my_field]}})
+      assert [:ok] == run_migration({:create_if_not_exists, %Index{table: @test_table_name, columns: [:my_field]}})
       assert [3] == get_indexes()
     end
   end
 
   describe "drop index" do
     setup do
-      {:create,
+      run_migration({:create,
         %Table{name: @test_table_name},
         [{:add, :id, :integer, []},
          {:add, :my_field, :integer, []}]
-      }
-      |> run_migration
+      })
     end
 
     test "when index does not exist" do
       assert_raise RuntimeError, "Index for field my_field in table migration_test_table does not exists", fn ->
-        {:drop, %Index{table: @test_table_name, columns: [:my_field]}}
-        |> run_migration
+        run_migration({:drop, %Index{table: @test_table_name, columns: [:my_field]}})
       end
     end
 
     test "when index exists" do
-      {:create, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
-      assert [:ok] = {:drop, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
+      run_migration({:create, %Index{table: @test_table_name, columns: [:my_field]}})
+      assert [:ok] = run_migration({:drop, %Index{table: @test_table_name, columns: [:my_field]}})
       assert [] == get_indexes()
     end
   end
 
   describe "drop index if exists" do
     setup do
-      {:create,
+      run_migration({:create,
         %Table{name: @test_table_name},
         [{:add, :id, :integer, []},
          {:add, :my_field, :integer, []}]
-      }
-      |> run_migration
+      })
     end
 
     test "when index does not exist" do
-      assert [:ok] = {:drop_if_exists, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
+      assert [:ok] = run_migration({:drop_if_exists, %Index{table: @test_table_name, columns: [:my_field]}})
     end
 
     test "when index exists" do
-      {:create, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
-      assert [:ok] = {:drop_if_exists, %Index{table: @test_table_name, columns: [:my_field]}}
-      |> run_migration
-
+      run_migration({:create, %Index{table: @test_table_name, columns: [:my_field]}})
+      assert [:ok] = run_migration({:drop_if_exists, %Index{table: @test_table_name, columns: [:my_field]}})
       assert [] == get_indexes()
     end
   end

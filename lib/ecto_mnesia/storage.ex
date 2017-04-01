@@ -69,11 +69,10 @@ defmodule Ecto.Mnesia.Storage do
   end
 
   def conf(config \\ []) do
-    [
+    Confex.process_env([
       host: config[:host] || @defaults[:host],
       storage_type: config[:storage_type] || @defaults[:storage_type]
-    ]
-    |> Confex.process_env()
+    ])
   end
 
   @doc """

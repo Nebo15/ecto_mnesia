@@ -17,8 +17,7 @@ defmodule Ecto.Mnesia.Record do
 
     params
     |> List.foldl(nilled_record, fn {field, value}, acc ->
-      acc
-      |> List.replace_at(Context.find_field_index!(field, context) + 1, value)
+      List.replace_at(acc, Context.find_field_index!(field, context) + 1, value)
     end)
     |> List.to_tuple()
   end

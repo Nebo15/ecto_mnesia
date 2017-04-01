@@ -11,8 +11,7 @@ defmodule Ecto.Mnesia.Record.Ordering do
   def get_ordering_fn(nil), do: &(&1)
   def get_ordering_fn(ordering) do
     fn data ->
-      data
-      |> Enum.sort(&sort(&1, &2, ordering))
+      Enum.sort(data, &sort(&1, &2, ordering))
     end
   end
 
@@ -25,7 +24,7 @@ defmodule Ecto.Mnesia.Record.Ordering do
   end
   defp join_exprs([%{expr: exprs1}]), do: exprs1
 
-  defp cmp(left, right, [{:asc, {{:., [], [{:&, [], [0]}, field]}, _,_}} | t]) do
+  defp cmp(left, right, [{:asc, {{:., [], [{:&, [], [0]}, field]}, _, _}} | t]) do
     case {Map.get(left, field), Map.get(right, field)} do
       {l, r} when l < r ->
         :lt
@@ -36,7 +35,7 @@ defmodule Ecto.Mnesia.Record.Ordering do
     end
   end
 
-  defp cmp(left, right, [{:desc, {{:., [], [{:&, [], [0]}, field]}, _,_}} | t]) do
+  defp cmp(left, right, [{:desc, {{:., [], [{:&, [], [0]}, field]}, _, _}} | t]) do
     case {Map.get(left, field), Map.get(right, field)} do
       {l, r} when l < r ->
         :gt

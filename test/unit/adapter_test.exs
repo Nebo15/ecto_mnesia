@@ -15,8 +15,7 @@ defmodule Ecto.Adapters.MnesiaTest do
         loan_id: "hello"
       }
 
-      assert {:ok, res_schema} = schema
-      |> TestRepo.insert
+      assert {:ok, res_schema} = TestRepo.insert(schema)
 
       assert %SellOffer{
         id: id,
@@ -36,8 +35,7 @@ defmodule Ecto.Adapters.MnesiaTest do
         loan_id: "hello"
       }
 
-      assert {:ok, res_schema} = schema
-      |> TestRepo.insert
+      assert {:ok, res_schema} = TestRepo.insert(schema)
 
       assert %SellOffer{
         id: 2,
@@ -56,21 +54,17 @@ defmodule Ecto.Adapters.MnesiaTest do
         loan_id: "hello"
       }
 
-      assert {:ok, _res_schema} = schema
-      |> TestRepo.insert
+      assert {:ok, _res_schema} = TestRepo.insert(schema)
 
       assert_raise Ecto.ConstraintError, fn ->
-        schema
-        |> TestRepo.insert
+        TestRepo.insert(schema)
       end
     end
 
     test "changeset" do
-      changeset = %SellOffer{}
-      |> Ecto.Changeset.change([loan_id: "hello"])
+      changeset = Ecto.Changeset.change(%SellOffer{}, [loan_id: "hello"])
 
-      assert {:ok, schema} = changeset
-      |> TestRepo.insert
+      assert {:ok, schema} = TestRepo.insert(changeset)
 
       assert %SellOffer{
         id: id,
@@ -85,12 +79,12 @@ defmodule Ecto.Adapters.MnesiaTest do
     end
 
     test "invalid changeset" do
-      changeset = %SellOffer{}
-      |> Ecto.Changeset.change([loan_id: 123])
-      |> Ecto.Changeset.validate_required([:income])
+      changeset =
+        %SellOffer{}
+        |> Ecto.Changeset.change([loan_id: 123])
+        |> Ecto.Changeset.validate_required([:income])
 
-      assert {:error, res_changeset} = changeset
-      |> TestRepo.insert
+      assert {:error, res_changeset} = TestRepo.insert(changeset)
 
       refute [] == res_changeset.errors
     end
@@ -129,18 +123,16 @@ defmodule Ecto.Adapters.MnesiaTest do
 
   describe "update" do
     setup do
-      {:ok, loan} = %SellOffer{loan_id: "hello", loan_changes: ["old_application"]}
-      |> TestRepo.insert
+      {:ok, loan} =
+        TestRepo.insert(%SellOffer{loan_id: "hello", loan_changes: ["old_application"], age: 11})
 
       %{loan: loan}
     end
 
     test "changeset", %{loan: loan} do
-      changeset = loan
-      |> Ecto.Changeset.change([loan_id: "world"])
+      changeset = Ecto.Changeset.change(loan, [loan_id: "world"])
 
-      assert {:ok, schema} = changeset
-      |> TestRepo.update
+      assert {:ok, schema} = TestRepo.update(changeset)
 
       assert %SellOffer{
         id: id,
@@ -155,13 +147,34 @@ defmodule Ecto.Adapters.MnesiaTest do
       assert updated_at > loan.updated_at
     end
 
-    test "invalid changeset" do
-      changeset = %SellOffer{}
-      |> Ecto.Changeset.change([loan_id: 123])
-      |> Ecto.Changeset.validate_required([:income])
+    test "with nil value", %{loan: loan} do
+      changeset = Ecto.Changeset.change(loan, [age: nil])
 
-      assert {:error, res_changeset} = changeset
-      |> TestRepo.insert
+      assert {:ok, schema} = TestRepo.update(changeset)
+
+      assert %SellOffer{
+        id: id,
+        age: nil,
+        inserted_at: inserted_at,
+        updated_at: updated_at
+      } = schema
+
+      assert loan.id == id
+      assert inserted_at
+      assert loan.updated_at != updated_at
+      assert updated_at > loan.updated_at
+
+      query = from so in SellOffer, where: so.id == ^loan.id
+      assert %SellOffer{age: nil} = TestRepo.one(query)
+    end
+
+    test "invalid changeset" do
+      changeset =
+        %SellOffer{}
+        |> Ecto.Changeset.change([loan_id: 123])
+        |> Ecto.Changeset.validate_required([:income])
+
+      assert {:error, res_changeset} = TestRepo.insert(changeset)
 
       refute [] == res_changeset.errors
     end
@@ -169,32 +182,31 @@ defmodule Ecto.Adapters.MnesiaTest do
     test "with :push" do
       query = from so in SellOffer, update: [push: [loan_changes: "new_application"]]
 
-      assert {1, nil} == query |> TestRepo.update_all([])
+      assert {1, nil} == TestRepo.update_all(query, [])
       assert [%SellOffer{loan_changes: ["old_application", "new_application"]}] = TestRepo.all(SellOffer)
     end
 
     test "with :pull" do
       query = from so in SellOffer, update: [pull: [loan_changes: "old_application"]]
 
-      assert {1, nil} == query |> TestRepo.update_all([])
+      assert {1, nil} == TestRepo.update_all(query, [])
       assert [%SellOffer{loan_changes: []}] = TestRepo.all(SellOffer)
     end
   end
 
   describe "select" do
     setup do
-      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
-      |> TestRepo.insert
-
-      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
-      |> TestRepo.insert
+      {:ok, loan1} =
+        TestRepo.insert(%SellOffer{loan_id: "hello", age: 11, loan_changes: ["old_application", "new_application"]})
+      {:ok, loan2} =
+        TestRepo.insert(%SellOffer{loan_id: "hello", age: 15})
 
       %{loan1: loan1, loan2: loan2}
     end
 
     test "query by id", %{loan1: loan1} do
       query = from so in SellOffer, where: so.id == ^loan1.id
-      assert [%SellOffer{id: loan_id}] = query |> TestRepo.all()
+      assert [%SellOffer{id: loan_id}] = TestRepo.all(query)
       assert loan1.id == loan_id
     end
 
@@ -204,47 +216,44 @@ defmodule Ecto.Adapters.MnesiaTest do
     end
 
     test "get_by/2", %{loan2: loan2} do
-      assert %SellOffer{id: loan_id} = SellOffer |> TestRepo.get_by([id: loan2.id])
+      assert %SellOffer{id: loan_id} = TestRepo.get_by(SellOffer, [id: loan2.id])
       assert loan2.id == loan_id
+    end
+
+    test "where item is in array" do
+      change = "new_application"
+
+      assert_raise RuntimeError, "Complex :in queries is not supported by the Mnesia adapter.", fn ->
+        TestRepo.all from(so in SellOffer, where: ^change in so.loan_changes)
+      end
     end
 
     test "structured" do
       assert [%SellOffer{} | _] =
-        from(so in SellOffer, select: so)
-        |> TestRepo.all()
+        TestRepo.all from(so in SellOffer, select: so)
 
       assert ["hello", "hello"] ==
-        from(so in SellOffer, select: so.loan_id)
-        |> TestRepo.all()
+        TestRepo.all from(so in SellOffer, select: so.loan_id)
 
       assert [["hello", 11], ["hello", 15]] ==
-        from(so in SellOffer, select: [so.loan_id, so.age])
-        |> TestRepo.all()
+        TestRepo.all from(so in SellOffer, select: [so.loan_id, so.age])
 
       assert [{"hello", 11}, {"hello", 15}] ==
-        from(so in SellOffer, select: {so.loan_id, so.age})
-        |> TestRepo.all()
+        TestRepo.all from(so in SellOffer, select: {so.loan_id, so.age})
 
       assert [{"hello", "42", 43}, {"hello", "42", 43}] ==
-        from(so in SellOffer, select: {so.loan_id, ^to_string(40 + 2), 43})
-        |> TestRepo.all()
+        TestRepo.all from(so in SellOffer, select: {so.loan_id, ^to_string(40 + 2), 43})
 
       assert [%{answer: 42, n: "hello"}, %{answer: 42, n: "hello"}] ==
-        from(so in SellOffer, select: %{n: so.loan_id, answer: 42})
-        |> TestRepo.all()
+        TestRepo.all from(so in SellOffer, select: %{n: so.loan_id, answer: 42})
     end
   end
 
   describe "update_all" do
     setup do
-      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
-      |> TestRepo.insert
-
-      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
-      |> TestRepo.insert
-
-      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
-      |> TestRepo.insert
+      {:ok, loan1} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 11})
+      {:ok, loan2} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 15})
+      {:ok, loan3} = TestRepo.insert(%SellOffer{loan_id: "world", age: 21})
 
       %{loan1: loan1, loan2: loan2, loan3: loan3}
     end
@@ -252,7 +261,7 @@ defmodule Ecto.Adapters.MnesiaTest do
     test "by query" do
       query = from so in SellOffer, update: [set: [status: "updated", guaranteed: true], inc: [age: 1]]
 
-      assert {3, nil} == query |> TestRepo.update_all([])
+      assert {3, nil} == TestRepo.update_all(query, [])
       assert 3 == Ecto.Mnesia.Table.count(:sell_offer)
       assert [
         %SellOffer{status: "updated", guaranteed: true, age: age1},
@@ -286,45 +295,32 @@ defmodule Ecto.Adapters.MnesiaTest do
 
   describe "delete" do
     setup do
-      {:ok, loan} = %SellOffer{loan_id: "hello"}
-      |> TestRepo.insert
+      {:ok, loan} = TestRepo.insert %SellOffer{loan_id: "hello"}
 
       %{loan: loan}
     end
 
     test "struct", %{loan: loan} do
-      assert {:ok, %{id: loan_id}} = loan
-      |> TestRepo.delete
-
+      assert {:ok, %{id: loan_id}} = TestRepo.delete(loan)
       assert loan.id == loan_id
     end
 
     test "does not exist" do
-      {:ok, _} = %SellOffer{loan_id: "hello", id: 123}
-      |> TestRepo.delete
+      {:ok, _} = TestRepo.delete(%SellOffer{loan_id: "hello", id: 123})
     end
 
     test "changeset", %{loan: loan} do
-      changeset = loan
-      |> Ecto.Changeset.change([loan_id: "world"])
-
-      assert {:ok, %{id: loan_id}} = changeset
-      |> TestRepo.delete
-
+      changeset = Ecto.Changeset.change(loan, [loan_id: "world"])
+      assert {:ok, %{id: loan_id}} = TestRepo.delete(changeset)
       assert loan.id == loan_id
     end
   end
 
   describe "delete_all" do
     setup do
-      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
-      |> TestRepo.insert
-
-      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
-      |> TestRepo.insert
-
-      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
-      |> TestRepo.insert
+      {:ok, loan1} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 11})
+      {:ok, loan2} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 15})
+      {:ok, loan3} = TestRepo.insert(%SellOffer{loan_id: "world", age: 21})
 
       %{loan1: loan1, loan2: loan2, loan3: loan3}
     end
@@ -348,15 +344,14 @@ defmodule Ecto.Adapters.MnesiaTest do
 
   describe "supports embeds" do
     setup do
-      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11, application: %SellOffer.Application{name: "John"}}
-      |> TestRepo.insert
+      {:ok, loan1} =
+        TestRepo.insert(%SellOffer{loan_id: "hello", age: 11, application: %SellOffer.Application{name: "John"}})
 
       %{loan1: loan1}
     end
 
     test "limits result" do
-      result = TestRepo.all from so in SellOffer,
-        limit: 1
+      result = TestRepo.all from so in SellOffer, limit: 1
 
       # TODO: reconstruct SellOffer.Application struct
       assert [%SellOffer{application: %{name: "John"}}] = result
@@ -366,58 +361,50 @@ defmodule Ecto.Adapters.MnesiaTest do
 
   describe "query limit" do
     setup do
-      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
-      |> TestRepo.insert
-
-      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
-      |> TestRepo.insert
-
-      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
-      |> TestRepo.insert
+      {:ok, loan1} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 11})
+      {:ok, loan2} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 15})
+      {:ok, loan3} = TestRepo.insert(%SellOffer{loan_id: "world", age: 21})
 
       %{loan1: loan1, loan2: loan2, loan3: loan3}
     end
 
     test "limits result" do
-      result = TestRepo.all from so in SellOffer,
-        limit: 1
-
+      result = TestRepo.all from so in SellOffer, limit: 1
       assert 1 == length(result)
     end
   end
 
   test "stream is not supported" do
-    assert_raise ArgumentError,
-                "stream/6 is not supported by adapter, use Ecto.Mnesia.Table.Stream.new/2 instead",
-                fn -> TestRepo.stream SellOffer end
+    assert_raise ArgumentError, "stream/6 is not supported by adapter, use Ecto.Mnesia.Table.Stream.new/2 instead",
+      fn ->
+        TestRepo.stream SellOffer
+      end
   end
 
   describe "order by" do
     setup do
-      {:ok, loan1} = %SellOffer{loan_id: "hello", age: 11}
-      |> TestRepo.insert
-
-      {:ok, loan2} = %SellOffer{loan_id: "hello", age: 15}
-      |> TestRepo.insert
-
-      {:ok, loan3} = %SellOffer{loan_id: "world", age: 21}
-      |> TestRepo.insert
+      {:ok, loan1} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 11})
+      {:ok, loan2} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 15})
+      {:ok, loan3} = TestRepo.insert(%SellOffer{loan_id: "world", age: 21})
 
       %{loan1: loan1, loan2: loan2, loan3: loan3}
     end
 
     test "multiple rules" do
-      [res1, res2, res3] = TestRepo.all from so in SellOffer,
-        order_by: [asc: so.loan_id, asc: so.age]
+      [res1, res2, res3] =
+        TestRepo.all from so in SellOffer,
+          order_by: [asc: so.loan_id, asc: so.age]
 
-      [^res1, ^res2, ^res3] = TestRepo.all from so in SellOffer,
-        order_by: [so.loan_id, so.age],
-        order_by: [so.loan_id, so.age]
+      [^res1, ^res2, ^res3] =
+        TestRepo.all from so in SellOffer,
+          order_by: [so.loan_id, so.age],
+          order_by: [so.loan_id, so.age]
     end
 
     test "field", %{loan1: loan1, loan2: loan2, loan3: loan3} do
-      [res1, res2, res3] = TestRepo.all from so in SellOffer,
-        order_by: [asc: so.loan_id, asc: so.age]
+      [res1, res2, res3] =
+        TestRepo.all from so in SellOffer,
+          order_by: [asc: so.loan_id, asc: so.age]
 
       assert res1.age < res2.age
       assert res2.age < res3.age
@@ -427,8 +414,9 @@ defmodule Ecto.Adapters.MnesiaTest do
     end
 
     test "field asc", %{loan1: loan1, loan2: loan2, loan3: loan3} do
-      [res1, res2, res3] = TestRepo.all from so in SellOffer,
-        order_by: [asc: so.age]
+      [res1, res2, res3] =
+        TestRepo.all from so in SellOffer,
+          order_by: [asc: so.age]
 
       assert res1.age < res2.age
       assert res2.age < res3.age
@@ -438,8 +426,9 @@ defmodule Ecto.Adapters.MnesiaTest do
     end
 
     test "field desc", %{loan1: loan1, loan2: loan2, loan3: loan3} do
-      [res1, res2, res3] = TestRepo.all from so in SellOffer,
-        order_by: [desc: so.age]
+      [res1, res2, res3] =
+        TestRepo.all from so in SellOffer,
+          order_by: [desc: so.age]
 
       assert res1.age > res2.age
       assert res2.age > res3.age
