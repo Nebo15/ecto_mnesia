@@ -23,11 +23,13 @@ Not supported features (create issue and vote if you need them):
 
 - Type casting. Mnesia can store any data in any field, including strings, numbers, atoms, tuples, floats or even PID's. **All types in your migrations will be silently ignored**.
 - Mnesia clustering and auto-clustering.
-- Lookups in `json` fields
+- Lookups in `json` fields.
 - Schemaless queries.
 - Composite primary keys.
-- Unique/all other constraints.
+- Unique/all other constraints (including associations).
 - JOINs
+- min, max, avg and other aggregation functions.
+- Intevals.
 
 *In general*. This adapter is still not passing all Ecto integration tests and in active development. But it already can be helpful in simple use-cases.
 
