@@ -25,7 +25,7 @@ defmodule Ecto.Mnesia.Record.Ordering do
   end
   defp join_exprs([%{expr: exprs1}]), do: exprs1
 
-  defp cmp(left, right, [{:asc, {{:., [], [{:&, [], [0]}, field]}, _,_}} | t]) do
+  defp cmp(left, right, [{:asc, {{:., [], [{:&, [], [0]}, field]}, _, _}} | t]) do
     case {Map.get(left, field), Map.get(right, field)} do
       {l, r} when l < r ->
         :lt
@@ -36,7 +36,7 @@ defmodule Ecto.Mnesia.Record.Ordering do
     end
   end
 
-  defp cmp(left, right, [{:desc, {{:., [], [{:&, [], [0]}, field]}, _,_}} | t]) do
+  defp cmp(left, right, [{:desc, {{:., [], [{:&, [], [0]}, field]}, _, _}} | t]) do
     case {Map.get(left, field), Map.get(right, field)} do
       {l, r} when l < r ->
         :gt
