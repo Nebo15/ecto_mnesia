@@ -110,32 +110,24 @@ It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be ins
 
   1. Add `ecto_mnesia` to your list of dependencies in `mix.exs`:
 
-    ```elixir
     def deps do
       [{:ecto_mnesia, "~> 0.9.0"}]
     end
-    ```
 
   2. Ensure `ecto_mnesia` is started before your application:
 
-    ```elixir
     def application do
       [applications: [:ecto_mnesia]]
     end
-    ```
 
   3. Use `EctoMnesia.Adapter` as your `Ecto.Repo` adapter:
 
-    ```elixir
     config :my_app, MyRepo,
       adapter: EctoMnesia.Adapter
-    ```
 
   4. Optionally set custom Mnesia data dir (don't forget to create it):
 
-    ```elixir
     config :mnesia, :dir, 'priv/data/mnesia'
-    ```
 
 The docs can be found at [https://hexdocs.pm/ecto_mnesia](https://hexdocs.pm/ecto_mnesia).
 
