@@ -45,4 +45,6 @@ defmodule EctoMnesia.Record.Ordering do
         cmp(left, right, t)
     end
   end
+
+  defp cmp(_, _, []), do: :gt
 end
