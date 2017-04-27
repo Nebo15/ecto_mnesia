@@ -436,5 +436,13 @@ defmodule EctoMnesia.AdapterTest do
       assert loan2.id == res2.id
       assert loan3.id == res1.id
     end
+
+    test "ordering with duplicated values" do
+      result =
+        TestRepo.all from so in SellOffer,
+          order_by: [desc: so.loan_id]
+
+      assert Enum.map(result, & &1.loan_id) == ["world", "hello", "hello"]
+    end
   end
 end
