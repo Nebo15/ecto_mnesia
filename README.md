@@ -43,7 +43,7 @@ Why do we need an adapter? We don't want to lock us to any specific database, si
 
 We don't recommend using distributed Mnesia, because it's neither an AP, nor a CP database. (And there is no such thing as an AC DB.) **Mnesia requires you to handle network partitions (split brains) manually.**
 
-So clustering should be an option only when you are absolutely sure about how to recover from split-brains. In general, if you are not sure what network splits are, don't use it.
+So clustering should be an option only when you are absolutely sure about how to recover from split-brains. In general, if you are not sure what a network split is, don't use distributed Mnesia.
 
 ### Mnesia configuration from `config.exs`
 
