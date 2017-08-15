@@ -260,8 +260,8 @@ defmodule EctoMnesia.Planner do
   @doc """
   Deletes a record from a Mnesia database.
   """
-  def delete(_repo, %{schema: _schema, source: {_, table}, autogenerate_id: autogenerate_id}, filter, _opts) do
-    pk = get_pk!(filter, autogenerate_id)
+  def delete(_repo, %{schema: schema, source: {_, table}, autogenerate_id: _autogenerate_id}, filter, _opts) do
+    pk = get_pk!(filter, schema.__schema__(:primary_key))
     case Table.delete(table, pk) do
       {:ok, ^pk} -> {:ok, []}
       {:error, reason} -> {:error, reason}
@@ -271,9 +271,9 @@ defmodule EctoMnesia.Planner do
   @doc """
   Updates record stored in a Mnesia database.
   """
-  def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: autogenerate_id},
+  def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: _autogenerate_id},
              params, filter, _autogen, _opts) do
-    pk = get_pk!(filter, autogenerate_id)
+    pk = get_pk!(filter, schema.__schema__(:primary_key))
     context = Context.new(table, schema)
     update = Update.from_keyword(schema, table, params, context)
 
@@ -285,6 +285,7 @@ defmodule EctoMnesia.Planner do
 
   # Extract primary key value or raise an error
   defp get_pk!(params, {pk_field, _pk_type}), do: get_pk!(params, pk_field)
+  defp get_pk!(params, [pk_field]), do: get_pk!(params, pk_field)
   defp get_pk!(params, pk_field) do
     case Keyword.fetch(params, pk_field) do
       :error -> raise Ecto.NoPrimaryKeyValueError
