@@ -69,7 +69,7 @@ defmodule EctoMnesia.Storage do
   end
 
   def conf(config \\ []) do
-    Confex.process_env([
+    Confex.Resolver.resolve!([
       host: config[:host] || @defaults[:host],
       storage_type: config[:storage_type] || @defaults[:storage_type]
     ])
