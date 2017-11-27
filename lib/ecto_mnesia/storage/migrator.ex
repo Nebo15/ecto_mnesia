@@ -9,7 +9,7 @@ defmodule EctoMnesia.Storage.Migrator do
 
   @doc false
   # Tables
-  def execute(repo, {:create, %Ecto.Migration.Table{name: table, engine: type}, instructions}, _opts) do
+  def execute(repo, {:create, %Ecto.Migration.Table{name: table, engine: engine}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
     table_attrs =
@@ -17,13 +17,13 @@ defmodule EctoMnesia.Storage.Migrator do
       |> Enum.reduce([], &reduce_fields(&1, &2, [], :skip))
       |> Enum.uniq()
 
-    case do_create_table(repo, table, type, table_attrs) do
+    case do_create_table(repo, table, engine, table_attrs) do
       :ok -> :ok
       :already_exists -> raise "Table #{table} already exists"
     end
   end
 
-  def execute(repo, {:create_if_not_exists, %Ecto.Migration.Table{name: table, engine: type}, instructions}, _opts) do
+  def execute(repo, {:create_if_not_exists, %Ecto.Migration.Table{name: table, engine: engine}, instructions}, _opts) do
     ensure_pk_table!(repo)
 
     table_attrs =
@@ -40,7 +40,7 @@ defmodule EctoMnesia.Storage.Migrator do
       |> Enum.reduce(table_attrs, &reduce_fields(&1, &2, [], :skip))
       |> Enum.uniq()
 
-    case do_create_table(repo, table, type, new_table_attrs) do
+    case do_create_table(repo, table, engine, new_table_attrs) do
       :ok -> :ok
       :already_exists -> :ok
     end
@@ -166,9 +166,33 @@ defmodule EctoMnesia.Storage.Migrator do
   end
 
   # Helpers
-  defp do_create_table(repo, table, type, attributes) do
+  defp do_create_table(repo, table, engine, attributes) do
+    opts = 
+      case engine do
+        nil ->
+          [{:type, :ordered_set}]
+        type when type in [:set, :ordered_set, :bag] ->
+          [{:type, type}]
+        opts when is_list(opts) ->
+          opts
+      end
+    
     config = conf(repo)
-    tab_def = [{:attributes, attributes}, {config[:storage_type], [config[:host]]}, {:type, get_engine(type)}]
+
+    storage_opts = 
+      cond do
+        opts[:disc_copies] != nil ->
+          []
+        opts[:ram_copies] != nil ->
+          []
+        opts[:disc_only_copies] != nil ->
+          []
+        :else ->
+          [{config[:storage_type], [config[:host]]}]
+      end
+    
+    
+    tab_def = [{:attributes, attributes}] ++ opts ++ storage_opts
     case Mnesia.create_table(table, tab_def) do
       {:atomic, :ok} ->
         Mnesia.wait_for_tables([table], 1_000)
@@ -177,9 +201,6 @@ defmodule EctoMnesia.Storage.Migrator do
         :already_exists
     end
   end
-
-  defp get_engine(nil), do: :ordered_set
-  defp get_engine(type) when is_atom(type), do: type
 
   defp reduce_fields({:remove, field}, fields, table_fields, on_not_found) do
     if on_not_found == :raise and !field_exists?(table_fields, field) do
