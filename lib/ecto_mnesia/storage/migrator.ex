@@ -174,7 +174,11 @@ defmodule EctoMnesia.Storage.Migrator do
         type when type in [:set, :ordered_set, :bag] ->
           [{:type, type}]
         opts when is_list(opts) ->
-          opts
+          if opts[:type] == nil do
+            [type: :ordered_set] ++ opts
+          else
+            opts
+          end
       end
     
     config = conf(repo)
