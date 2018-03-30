@@ -62,7 +62,7 @@ If you want to know more how this tool works take look at [Confex](https://githu
 
 #### Storage Types
 
-  - `:disc_copies` - store data in both RAM and on dics. Recommended value for most cases.
+  - `:disc_copies` - store data in both RAM and on disc. Recommended value for most cases.
   - `:ram_copies` - store data only in RAM. Data will be lost on node restart. Useful when working with large datasets that don't need to be persisted.
   - `:disc_only_copies` - store data only on disc. This will limit database size to 2GB and affect adapter performance.
 
