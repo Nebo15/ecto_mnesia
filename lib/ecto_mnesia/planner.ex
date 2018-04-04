@@ -201,11 +201,16 @@ defmodule EctoMnesia.Planner do
   defp do_insert(table, schema, nil, params) do
     record = Record.new(schema, table, params)
 
-    case Table.insert(table, record) do
-      {:ok, ^record} ->
-        {:ok, params}
-      {:error, reason} ->
-        {:error, reason}
+    case Mnesia.transaction(fn ->
+      case Table.insert(table, record) do
+        {:ok, ^record} ->
+          {:ok, params}
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end) do
+      {:atomic, res} -> res
+      {:abort, reason} -> {:error, reason}
     end
   end
 
@@ -214,13 +219,18 @@ defmodule EctoMnesia.Planner do
     params = put_new_pk(params, pk_field, table)
     record = Record.new(schema, table, params)
 
-    case Table.insert(table, record) do
-      {:ok, ^record} ->
-        {:ok, params}
-      {:error, :already_exists} ->
-        {:invalid, [{:unique, pk_field}]}
-      {:error, reason} ->
-        {:error, reason}
+    case Mnesia.transaction(fn ->
+      case Table.insert(table, record) do
+        {:ok, ^record} ->
+          {:ok, params}
+        {:error, :already_exists} ->
+          {:invalid, [{:unique, pk_field}]}
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end) do
+      {:atomic, res} -> res
+      {:abort, reason} -> {:error, reason}
     end
   end
 
