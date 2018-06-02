@@ -3,6 +3,7 @@ defmodule EctoMnesia.Storage.Migrator do
   This module implements `Ecto.Storage` behavior that is used by `Ecto.Migrations`.
   """
   alias EctoMnesia.Table
+  alias EctoMnesia.Storage
   alias :mnesia, as: Mnesia
 
   @pk_table_name :id_seq
@@ -271,5 +272,5 @@ defmodule EctoMnesia.Storage.Migrator do
   end
 
   defp conf(repo),
-    do: EctoMnesia.Storage.conf(repo.config)
+    do: Storage.conf(repo.config)
 end

@@ -6,6 +6,8 @@ defmodule EctoMnesia.Planner do
   alias :mnesia, as: Mnesia
   alias EctoMnesia.{Record, Table}
   alias EctoMnesia.Record.{Context, Ordering, Update}
+  alias Ecto.Adapters.SQL
+  alias Ecto.UUID
 
   @behaviour Ecto.Adapter
 
@@ -34,8 +36,8 @@ defmodule EctoMnesia.Planner do
   Automatically generate next ID for binary keys, leave sequence keys empty for generation on insert.
   """
   def autogenerate(:id), do: nil
-  def autogenerate(:embed_id), do: Ecto.UUID.generate()
-  def autogenerate(:binary_id), do: Ecto.UUID.autogenerate()
+  def autogenerate(:embed_id), do: UUID.generate()
+  def autogenerate(:binary_id), do: UUID.autogenerate()
 
   @doc """
   Prepares are called by Ecto before `execute/6` methods.
@@ -56,7 +58,7 @@ defmodule EctoMnesia.Planner do
                       sources, preprocess, _opts) do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
-    Logger.debug("Selecting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
+    Logger.debug(fn -> "Selecting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
 
     result = table
     |> Table.select(match_spec)
@@ -76,7 +78,7 @@ defmodule EctoMnesia.Planner do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
-    Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
+    Logger.debug(fn -> "Deleting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
 
     table = Table.get_name(table)
     Table.transaction(fn ->
@@ -100,7 +102,7 @@ defmodule EctoMnesia.Planner do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
-    Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
+    Logger.debug(fn -> "Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
 
     table = Table.get_name(table)
     update = Update.update_record(updates, sources, context)
@@ -298,11 +300,11 @@ defmodule EctoMnesia.Planner do
   defp get_limit(%Ecto.Query.QueryExpr{expr: limit}), do: limit
 
   # Required methods for Ecto type casing
-  def loaders({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.load_embed(primitive, &1)]
-  def loaders(:binary_id, type), do: [Ecto.UUID, type]
+  def loaders({:embed, _value} = primitive, _type), do: [&SQL.load_embed(primitive, &1)]
+  def loaders(:binary_id, type), do: [UUID, type]
   def loaders(_primitive, type), do: [type]
 
-  def dumpers({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.dump_embed(primitive, &1)]
-  def dumpers(:binary_id, type), do: [type, Ecto.UUID]
+  def dumpers({:embed, _value} = primitive, _type), do: [&SQL.dump_embed(primitive, &1)]
+  def dumpers(:binary_id, type), do: [type, UUID]
   def dumpers(_primitive, type), do: [type]
 end

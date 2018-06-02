@@ -16,4 +16,3 @@ Code.require_file "../../deps/ecto/integration_test/cases/migrator.exs", __DIR__
 # Code.require_file "../../deps/ecto/integration_test/cases/joins.exs", __DIR__
 # Code.require_file "../../deps/ecto/integration_test/sql/sandbox.exs", __DIR__
 # Code.require_file "../../deps/ecto/integration_test/sql/sql.exs", __DIR__
-

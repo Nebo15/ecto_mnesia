@@ -3,6 +3,7 @@ defmodule EctoMnesia.Storage do
   This module provides interface to manage Mnesia state and records data structure.
   """
   require Logger
+  alias Confex.Resolver
   alias :mnesia, as: Mnesia
 
   @behaviour Ecto.Adapter.Storage
@@ -69,7 +70,7 @@ defmodule EctoMnesia.Storage do
   end
 
   def conf(config \\ []) do
-    Confex.Resolver.resolve!([
+    Resolver.resolve!([
       host: config[:host] || @defaults[:host],
       storage_type: config[:storage_type] || @defaults[:storage_type]
     ])

@@ -2,6 +2,8 @@ defmodule EctoMnesia.AdapterTest do
   use ExUnit.Case
   require Logger
   import Ecto.Query, only: [from: 2]
+  alias Ecto.Changeset
+  alias EctoMnesia.Table
 
   setup do
     :mnesia.clear_table(:sell_offer)
@@ -62,7 +64,7 @@ defmodule EctoMnesia.AdapterTest do
     end
 
     test "changeset" do
-      changeset = Ecto.Changeset.change(%SellOffer{}, [loan_id: "hello"])
+      changeset = Changeset.change(%SellOffer{}, [loan_id: "hello"])
 
       assert {:ok, schema} = TestRepo.insert(changeset)
 
@@ -81,8 +83,8 @@ defmodule EctoMnesia.AdapterTest do
     test "invalid changeset" do
       changeset =
         %SellOffer{}
-        |> Ecto.Changeset.change([loan_id: 123])
-        |> Ecto.Changeset.validate_required([:income])
+        |> Changeset.change([loan_id: 123])
+        |> Changeset.validate_required([:income])
 
       assert {:error, res_changeset} = TestRepo.insert(changeset)
 
@@ -130,7 +132,7 @@ defmodule EctoMnesia.AdapterTest do
     end
 
     test "changeset", %{loan: loan} do
-      changeset = Ecto.Changeset.change(loan, [loan_id: "world"])
+      changeset = Changeset.change(loan, [loan_id: "world"])
 
       assert {:ok, schema} = TestRepo.update(changeset)
 
@@ -148,7 +150,7 @@ defmodule EctoMnesia.AdapterTest do
     end
 
     test "with nil value", %{loan: loan} do
-      changeset = Ecto.Changeset.change(loan, [age: nil])
+      changeset = Changeset.change(loan, [age: nil])
 
       assert {:ok, schema} = TestRepo.update(changeset)
 
@@ -171,8 +173,8 @@ defmodule EctoMnesia.AdapterTest do
     test "invalid changeset" do
       changeset =
         %SellOffer{}
-        |> Ecto.Changeset.change([loan_id: 123])
-        |> Ecto.Changeset.validate_required([:income])
+        |> Changeset.change([loan_id: 123])
+        |> Changeset.validate_required([:income])
 
       assert {:error, res_changeset} = TestRepo.insert(changeset)
 
@@ -262,7 +264,7 @@ defmodule EctoMnesia.AdapterTest do
       query = from so in SellOffer, update: [set: [status: "updated", guaranteed: true], inc: [age: 1]]
 
       assert {3, nil} == TestRepo.update_all(query, [])
-      assert 3 == EctoMnesia.Table.count(:sell_offer)
+      assert 3 == Table.count(:sell_offer)
       assert [
         %SellOffer{status: "updated", guaranteed: true, age: age1},
         %SellOffer{status: "updated", guaranteed: true, age: age2},
@@ -281,7 +283,7 @@ defmodule EctoMnesia.AdapterTest do
 
     test "by struct" do
       assert {3, nil} == TestRepo.update_all SellOffer, set: [status: "updated", guaranteed: true], inc: [age: 1]
-      assert 3 == EctoMnesia.Table.count(:sell_offer)
+      assert 3 == Table.count(:sell_offer)
       assert [
         %SellOffer{status: "updated", guaranteed: true, age: age1},
         %SellOffer{status: "updated", guaranteed: true, age: age2},
@@ -310,7 +312,7 @@ defmodule EctoMnesia.AdapterTest do
     end
 
     test "changeset", %{loan: loan} do
-      changeset = Ecto.Changeset.change(loan, [loan_id: "world"])
+      changeset = Changeset.change(loan, [loan_id: "world"])
       assert {:ok, %{id: loan_id}} = TestRepo.delete(changeset)
       assert loan.id == loan_id
     end
@@ -327,18 +329,18 @@ defmodule EctoMnesia.AdapterTest do
 
     test "by query" do
       assert {2, nil} == TestRepo.delete_all from(so in SellOffer, where: so.age < 20)
-      assert 1 == EctoMnesia.Table.count(:sell_offer)
+      assert 1 == Table.count(:sell_offer)
     end
 
     test "return result" do
       # TODO: Return on delete
       assert {2, _} = TestRepo.delete_all from(so in SellOffer, where: so.age < 20), select: [:id, :age]
-      assert 1 == EctoMnesia.Table.count(:sell_offer)
+      assert 1 == Table.count(:sell_offer)
     end
 
     test "by struct" do
       assert {3, nil} == TestRepo.delete_all(SellOffer)
-      assert 0 == EctoMnesia.Table.count(:sell_offer)
+      assert 0 == Table.count(:sell_offer)
     end
   end
 

@@ -4,6 +4,7 @@ defmodule EctoMnesia.Record.Context do
   """
   alias EctoMnesia.Table
   alias EctoMnesia.Record.Context
+  alias Context.MatchSpec
 
   defstruct table: %Context.Table{}, query: %Context.Query{}, match_spec: %Context.MatchSpec{}
 
@@ -61,11 +62,11 @@ defmodule EctoMnesia.Record.Context do
   Returns match spec that can be used in `:mnesia.select/3`.
   """
   def get_match_spec(%Context{match_spec: %Context.MatchSpec{} = match_spec}),
-    do: Context.MatchSpec.dump(match_spec)
+    do: MatchSpec.dump(match_spec)
 
   # Builds new match_spec on query updates
   defp build_match_spec(context, query),
-    do: Context.MatchSpec.update(context, query)
+    do: MatchSpec.update(context, query)
 
   @doc """
   Returns MatchSpec record field index by a `field` name.
