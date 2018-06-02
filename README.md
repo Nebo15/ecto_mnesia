@@ -7,7 +7,7 @@ Ecto 2.X adapter for Mnesia Erlang term database. In most cases it can be used a
 Supported features:
 
 - Compatible `Ecto.Repo` API.
-- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. Also adapter emulates `query.select` and `query.order_bys`, `select .. in [..]` behaviours, even though Mnesia itself does not support them.
+- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. Also adapter emulates `query.select` and `query.order_bys`, `select .. in [..]` behaviors, even though Mnesia itself does not support them.
 - Auto-generated (via sequence table) `:id` primary keys.
 - Migrations and database setup via `Ecto.Migrations`.
 - Transactions.
@@ -29,7 +29,7 @@ Not supported features (create issue and vote if you need them):
 - Unique/all other constraints (including associations).
 - JOINs.
 - min, max, avg and other aggregation functions.
-- Intevals.
+- Intervals.
 
 **In general**. This adapter is still not passing all Ecto integration tests and in active development. But it already can be helpful in simple use-cases.
 

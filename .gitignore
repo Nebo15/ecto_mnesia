@@ -21,6 +21,7 @@ bench/snapshots
 
 # Don't commit editor configs
 .idea
+*.iml
 *.iws
 /out/
 atlassian-ide-plugin.xml
@@ -34,6 +35,9 @@ GitHub.sublime-settings
 .tags_sorted_by_file
 .vagrant
 .DS_Store
+.vscode
+.elixir_ls
+.sonarlint
 
 # Ignore released binaries
 rel/*/

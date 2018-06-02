@@ -3,6 +3,7 @@ defmodule EctoMnesia.Storage do
   This module provides interface to manage Mnesia state and records data structure.
   """
   require Logger
+  alias Confex.Resolver
   alias :mnesia, as: Mnesia
 
   @behaviour Ecto.Adapter.Storage
@@ -19,12 +20,13 @@ defmodule EctoMnesia.Storage do
     check_mnesia_dir()
     Mnesia.start()
   end
+
   @doc """
   Stop the Mnesia database.
   """
   def stop do
     check_mnesia_dir()
-    Mnesia.stop
+    Mnesia.stop()
   end
 
   @doc """
@@ -44,16 +46,21 @@ defmodule EctoMnesia.Storage do
     check_mnesia_dir()
     config = conf(config)
 
-    Logger.info "==> Setting Mnesia schema table copy type"
+    Logger.info("==> Setting Mnesia schema table copy type")
     Mnesia.change_table_copy_type(:schema, config[:host], config[:storage_type])
 
-    Logger.info "==> Ensuring Mnesia schema exists"
+    Logger.info("==> Ensuring Mnesia schema exists")
+
     case Mnesia.create_schema([config[:host]]) do
-      {:error, {_, {:already_exists, _}}} -> {:error, :already_up}
+      {:error, {_, {:already_exists, _}}} ->
+        {:error, :already_up}
+
       {:error, reason} ->
-          Logger.error "create_schema failed with reason #{inspect reason}"
-          {:error, :unknown}
-      :ok -> :ok
+        Logger.error("create_schema failed with reason #{inspect(reason)}")
+        {:error, :unknown}
+
+      :ok ->
+        :ok
     end
   end
 
@@ -69,10 +76,10 @@ defmodule EctoMnesia.Storage do
   end
 
   def conf(config \\ []) do
-    Confex.Resolver.resolve!([
+    Resolver.resolve!(
       host: config[:host] || @defaults[:host],
       storage_type: config[:storage_type] || @defaults[:storage_type]
-    ])
+    )
   end
 
   @doc """
@@ -81,15 +88,19 @@ defmodule EctoMnesia.Storage do
   """
   def check_mnesia_dir do
     dir = Application.get_env(:mnesia, :dir, nil)
+
     case dir do
       nil ->
-        Logger.warn "Mnesia dir is not set. Mnesia use default path."
+        Logger.warn("Mnesia dir is not set. Mnesia use default path.")
+
       dir when is_binary(dir) ->
-        Logger.error "Mnesia dir is a binary. Mnesia requires a charlist, which is set with simple quotes ('')"
+        Logger.error("Mnesia dir is a binary. Mnesia requires a charlist, which is set with simple quotes ('')")
+
       dir when is_list(dir) ->
         :ok
+
       _dir ->
-        Logger.error "Mnesia dir is not character list. Mnesia will not work. "
+        Logger.error("Mnesia dir is not character list. Mnesia will not work. ")
     end
   end
 end

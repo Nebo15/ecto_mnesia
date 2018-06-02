@@ -12,12 +12,14 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
   defstruct head: [], conditions: [], body: []
 
   def update(%Context{query: %Context.Query{sources: sources}} = context, %Ecto.Query{} = query) do
-    %{context | match_spec: %{
-      context.match_spec |
-        body: match_body(context, sources),
-        head: match_head(context),
-        conditions: match_conditions(query, sources, context)
-      }
+    %{
+      context
+      | match_spec: %{
+          context.match_spec
+          | body: match_body(context, sources),
+            head: match_head(context),
+            conditions: match_conditions(query, sources, context)
+        }
     }
   end
 
@@ -48,6 +50,7 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
   defp select_fields({:&, [], [0, fields, _]}, _sources), do: fields
   defp select_fields({{:., [], [{:&, [], [0]}, field]}, _, []}, _sources), do: [field]
   defp select_fields({:^, [], [_]} = expr, sources), do: [unbind(expr, sources)]
+
   defp select_fields(exprs, sources) when is_list(exprs) do
     Enum.flat_map(exprs, &select_fields(&1, sources))
   end
@@ -55,8 +58,10 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
   # Resolve params
   defp match_conditions(%Ecto.Query{wheres: wheres}, sources, context),
     do: match_conditions(wheres, sources, context, [])
+
   defp match_conditions([], _sources, _context, acc),
     do: acc
+
   defp match_conditions([%{expr: expr, params: params} | tail], sources, context, acc) do
     condition = condition_expression(expr, merge_sources(sources, params), context)
     match_conditions(tail, sources, context, [condition | acc])
@@ -68,9 +73,10 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
 
   # Unbinding parameters
   def condition_expression({:^, [], [_]} = binding, sources, _context), do: unbind(binding, sources)
+
   def condition_expression({op, [], [field, {:^, [], [_]} = binding]}, sources, context) do
-     parameters = unbind(binding, sources)
-     condition_expression({op, [], [field, parameters]}, sources, context)
+    parameters = unbind(binding, sources)
+    condition_expression({op, [], [field, parameters]}, sources, context)
   end
 
   # `is_nil` is a special case when we need to :== with nil value
@@ -82,14 +88,16 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
   def condition_expression({:in, [], [field, parameters]}, sources, context) when is_list(parameters) do
     field = condition_expression(field, sources, context)
 
-    expr = parameters
-    |> unbind(sources)
-    |> Enum.map(fn parameter ->
-      {:==, field, condition_expression(parameter, sources, context)}
-    end)
+    expr =
+      parameters
+      |> unbind(sources)
+      |> Enum.map(fn parameter ->
+        {:==, field, condition_expression(parameter, sources, context)}
+      end)
 
     if expr == [] do
-      {:==, true, false} # Hack to return zero values
+      # Hack to return zero values
+      {:==, true, false}
     else
       expr
       |> List.insert_at(0, :or)
@@ -136,11 +144,13 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
   def unbind({:^, [], [start_at, end_at]}, sources) do
     Enum.slice(sources, Range.new(start_at, end_at))
   end
+
   def unbind({:^, [], [index]}, sources) do
     sources
     |> Enum.at(index)
     |> get_binded()
   end
+
   def unbind(value, _sources), do: value
 
   # Binded variable value
@@ -148,7 +158,7 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
   defp get_binded(value), do: value
 
   # Convert Ecto.Query operations to MatchSpec analogs. (Only ones that doesn't match.)
-  defp guard_function_operation(:!=), do: :'/='
-  defp guard_function_operation(:<=), do: :'=<'
+  defp guard_function_operation(:!=), do: :"/="
+  defp guard_function_operation(:<=), do: :"=<"
   defp guard_function_operation(op), do: op
 end
