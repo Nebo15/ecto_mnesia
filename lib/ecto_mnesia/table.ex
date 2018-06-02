@@ -9,8 +9,10 @@ defmodule EctoMnesia.Table do
   """
   def insert(table, record, _opts \\ []) when is_tuple(record) do
     table = get_name(table)
+
     transaction(fn ->
       key = elem(record, 1)
+
       case _get(table, key) do
         nil -> _insert(table, record)
         _ -> {:error, :already_exists}
@@ -30,6 +32,7 @@ defmodule EctoMnesia.Table do
   """
   def get(table, key, _opts \\ []) do
     table = get_name(table)
+
     transaction(fn ->
       _get(table, key)
     end)
@@ -50,10 +53,12 @@ defmodule EctoMnesia.Table do
   """
   def update(table, key, changes, _opts \\ []) when is_list(changes) do
     table = get_name(table)
+
     transaction(fn ->
       case _get(table, key, :write) do
         nil ->
           {:error, :not_found}
+
         stored_record ->
           _insert(table, update_record(stored_record, changes))
       end
@@ -67,18 +72,22 @@ defmodule EctoMnesia.Table do
     |> Enum.reduce(data, fn
       {index, value}, record ->
         List.replace_at(record, index + 1, value)
+
       {index, :inc, value}, record ->
         List.update_at(record, index + 1, fn
           numeric when is_number(numeric) or is_float(numeric) ->
             numeric + value
+
           nil ->
             value
         end)
+
       {index, :push, value}, record ->
         List.update_at(record, index + 1, fn
           list when is_list(list) -> list ++ [value]
           nil -> [value]
         end)
+
       {index, :pull, value}, record ->
         List.update_at(record, index + 1, fn
           list when is_list(list) -> Enum.filter(list, &(&1 != value))
@@ -93,6 +102,7 @@ defmodule EctoMnesia.Table do
   """
   def delete(table, key, _opts \\ []) do
     table = get_name(table)
+
     transaction(fn ->
       :ok = Mnesia.delete(table, key, :write)
       {:ok, key}
@@ -106,6 +116,7 @@ defmodule EctoMnesia.Table do
 
   def select(table, match_spec, nil) do
     table = get_name(table)
+
     transaction(fn ->
       Mnesia.select(table, match_spec, :read)
     end)
@@ -113,6 +124,7 @@ defmodule EctoMnesia.Table do
 
   def select(table, match_spec, limit) do
     table = get_name(table)
+
     transaction(fn ->
       {result, _context} = Mnesia.select(table, match_spec, limit, :read)
       result
@@ -128,9 +140,10 @@ defmodule EctoMnesia.Table do
   Get list of attributes that defined in Mnesia schema.
   """
   def attributes(table) do
-    name = table
-    |> get_name()
-    |> Mnesia.table_info(:attributes)
+    name =
+      table
+      |> get_name()
+      |> Mnesia.table_info(:attributes)
 
     {:ok, name}
   catch
@@ -159,12 +172,16 @@ defmodule EctoMnesia.Table do
     case activity(context, fun) do
       {:error, {%{} = reason, stack}, _} ->
         reraise reason, stack
+
       {:error, reason, stack} ->
         :erlang.raise(:error, reason, stack)
+
       {:raise, err} ->
         raise err
+
       {:error, reason} ->
         {:error, reason}
+
       result ->
         result
     end
@@ -173,10 +190,10 @@ defmodule EctoMnesia.Table do
   # Activity is hard to deal with because it doesn't return value in dirty context (exits),
   # and returns in a transactional context
   defp activity(context, fun) do
-      do_activity(context, fun)
+    do_activity(context, fun)
   catch
-    :exit, {:aborted, {:no_exists, [schema, _id]}} -> {:raise, "Schema #{inspect schema} does not exist"}
-    :exit, {:aborted, {:no_exists, schema}} -> {:raise, "Schema #{inspect schema} does not exist"}
+    :exit, {:aborted, {:no_exists, [schema, _id]}} -> {:raise, "Schema #{inspect(schema)} does not exist"}
+    :exit, {:aborted, {:no_exists, schema}} -> {:raise, "Schema #{inspect(schema)} does not exist"}
     :exit, {:aborted, :rollback} -> {:error, :rollback}
     :exit, {:aborted, reason} -> {:error, reason, System.stacktrace()}
     :exit, reason -> {:error, reason, System.stacktrace()}
@@ -184,7 +201,7 @@ defmodule EctoMnesia.Table do
 
   defp do_activity(context, fun) do
     case Mnesia.activity(context, fun) do
-      {:aborted, {:no_exists, [schema, _id]}} -> {:raise, "Schema #{inspect schema} does not exist"}
+      {:aborted, {:no_exists, [schema, _id]}} -> {:raise, "Schema #{inspect(schema)} does not exist"}
       {:aborted, reason} -> {:error, reason}
       {:atomic, result} -> result
       result -> result
@@ -197,8 +214,9 @@ defmodule EctoMnesia.Table do
   @spec first(atom) :: any | nil | no_return
   def first(table) do
     table = get_name(table)
+
     case Mnesia.first(table) do
-      :'$end_of_table' -> nil
+      :"$end_of_table" -> nil
       value -> value
     end
   end
@@ -209,8 +227,9 @@ defmodule EctoMnesia.Table do
   @spec next(atom, any) :: any | nil | no_return
   def next(table, key) do
     table = get_name(table)
+
     case Mnesia.next(table, key) do
-      :'$end_of_table' -> nil
+      :"$end_of_table" -> nil
       value -> value
     end
   end
@@ -222,8 +241,9 @@ defmodule EctoMnesia.Table do
   @spec prev(atom, any) :: any | nil | no_return
   def prev(table, key) do
     table = get_name(table)
+
     case Mnesia.prev(table, key) do
-      :'$end_of_table' -> nil
+      :"$end_of_table" -> nil
       value -> value
     end
   end
@@ -234,8 +254,9 @@ defmodule EctoMnesia.Table do
   @spec last(atom) :: any | nil | no_return
   def last(table) do
     table = get_name(table)
+
     case Mnesia.last(table) do
-      :'$end_of_table' -> nil
+      :"$end_of_table" -> nil
       value -> value
     end
   end

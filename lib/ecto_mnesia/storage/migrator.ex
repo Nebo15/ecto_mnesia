@@ -124,7 +124,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.add_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect not_found_node} is not started"
+        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:already_exists, ^table, _}} -> raise "Index for field #{index} in table #{table} already exists"
       end
     end)
@@ -136,7 +136,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.add_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect not_found_node} is not started"
+        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:already_exists, ^table, _}} -> :ok
       end
     end)
@@ -148,7 +148,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.del_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect not_found_node} is not started"
+        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:no_exists, ^table, _}} -> raise "Index for field #{index} in table #{table} does not exists"
       end
     end)
@@ -160,7 +160,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.del_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect not_found_node} is not started"
+        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:no_exists, ^table, _}} -> :ok
       end
     end)
@@ -170,10 +170,12 @@ defmodule EctoMnesia.Storage.Migrator do
   defp do_create_table(repo, table, type, attributes) do
     config = conf(repo)
     tab_def = [{:attributes, attributes}, {config[:storage_type], [config[:host]]}, {:type, get_engine(type)}]
+
     case Mnesia.create_table(table, tab_def) do
       {:atomic, :ok} ->
         Mnesia.wait_for_tables([table], 1_000)
         :ok
+
       {:aborted, {:already_exists, ^table}} ->
         :already_exists
     end
@@ -197,7 +199,8 @@ defmodule EctoMnesia.Storage.Migrator do
 
     case Enum.find_index(fields, &(&1 == old_field)) do
       nil ->
-        if on_not_found == :raise, do: raise "Field #{old_field} not found", else: fields
+        if on_not_found == :raise, do: raise("Field #{old_field} not found", else: fields)
+
       index when is_number(index) ->
         List.replace_at(fields, index, new_field)
     end
@@ -245,10 +248,12 @@ defmodule EctoMnesia.Storage.Migrator do
 
   def find_field_index(fields, field),
     do: Enum.find_index(fields, &(&1 == field))
+
   def find_field_index(fields, field, data_migrations) do
     case Enum.find(data_migrations, fn {_old_name, new_name} -> new_name == field end) do
       {old_field, _new_field} ->
         find_field_index(fields, old_field)
+
       nil ->
         find_field_index(fields, field)
     end
@@ -265,6 +270,7 @@ defmodule EctoMnesia.Storage.Migrator do
     case res do
       :no_exists ->
         do_create_table(repo, @pk_table_name, :set, [:thing, :id])
+
       _ ->
         Mnesia.wait_for_tables([@pk_table_name], 1_000)
         :ok
