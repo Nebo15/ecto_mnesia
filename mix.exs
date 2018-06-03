@@ -9,7 +9,7 @@ defmodule EctoMnesia.Mixfile do
       description: "Ecto adapter for Mnesia erlang term storage.",
       package: package(),
       version: @version,
-      elixir: "~> 1.3",
+      elixir: "~> 1.6",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [] ++ Mix.compilers(),
       build_embedded: Mix.env() == :prod,
