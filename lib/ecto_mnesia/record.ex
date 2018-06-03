@@ -12,6 +12,7 @@ defmodule EctoMnesia.Record do
     |> Context.new(schema)
     |> new(params)
   end
+
   def new(%Context{table: %Context.Table{name: table, structure: structure}} = context, params) do
     nilled_record = [table | List.duplicate(nil, length(structure))]
 

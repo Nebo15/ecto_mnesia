@@ -11,7 +11,7 @@ defmodule EctoMnesia.Record.Update do
     Enum.map(params, fn {key, value} ->
       case Keyword.get(structure, key) do
         {i, _} -> {i, value}
-        nil -> raise ArgumentError, "Field `#{inspect key}` does not exist in table `#{inspect name}`"
+        nil -> raise ArgumentError, "Field `#{inspect(key)}` does not exist in table `#{inspect(name)}`"
       end
     end)
   end
@@ -21,6 +21,7 @@ defmodule EctoMnesia.Record.Update do
   """
   def update_record(exprs, sources, context), do: update_record([], exprs, sources, context)
   def update_record(updates, [], _sources, _context), do: updates
+
   def update_record(updates, [%Ecto.Query.QueryExpr{expr: expr} | expr_t], sources, context) do
     updates
     |> apply_rules(expr, sources, context)
@@ -28,6 +29,7 @@ defmodule EctoMnesia.Record.Update do
   end
 
   defp apply_rules(updates, [], _sources, _context), do: updates
+
   defp apply_rules(updates, [rule | rules_t], sources, context) do
     updates
     |> apply_conditions(rule, sources, context)
@@ -35,6 +37,7 @@ defmodule EctoMnesia.Record.Update do
   end
 
   defp apply_conditions(updates, {_, []}, _sources, _context), do: updates
+
   defp apply_conditions(updates, {key, [con | conds_t]}, sources, context) do
     updates
     |> apply_condition({key, con}, sources, context)

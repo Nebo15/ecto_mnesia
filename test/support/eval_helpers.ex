@@ -7,6 +7,7 @@ defmodule Support.EvalHelpers do
   """
   defmacro quote_and_eval(quoted, source \\ []) do
     quoted = Macro.escape(quoted)
+
     quote do
       Code.eval_quoted(unquote(quoted), unquote(source), __ENV__)
     end

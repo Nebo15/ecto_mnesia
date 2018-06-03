@@ -25,6 +25,8 @@ install:
   - mix local.rebar --force
   - mix deps.get
 script:
+  # Check that code is formatted
+  - "mix format --dry-run --check-formatted"
   # Run all tests except pending ones
   - "mix test --exclude pending --trace"
   # Submit code coverage report to Coveralls
