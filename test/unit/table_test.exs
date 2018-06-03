@@ -7,7 +7,7 @@ defmodule EctoMnesia.TableTest do
   @test_record_key 1
   @test_record {:sell_offer, @test_record_key, 123, "loan-007", nil, nil, 9.23, nil, true,
                 nil, nil, nil, 26, 1.0e3, 20, 30, "AB", nil, 100, "100", nil, nil, "ok", nil, true,
-                {{2016, 11, 18}, {18, 43, 8, 496985}}, {{2016, 11, 18}, {18, 43, 8, 502628}}}
+                {{2016, 11, 18}, {18, 43, 8, 496_985}}, {{2016, 11, 18}, {18, 43, 8, 502_628}}}
 
   setup do
     :mnesia.clear_table(:sell_offer)

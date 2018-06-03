@@ -31,7 +31,7 @@ defmodule Ecto.RepoTest do
   # end
 
   test "works with primary key value", %{loan: loan} do
-    assert nil == TestRepo.get(SellOffer, 11111)
+    assert nil == TestRepo.get(SellOffer, 11_111)
     assert %SellOffer{} = TestRepo.get(SellOffer, loan.id)
     assert %SellOffer{} = TestRepo.get_by(SellOffer, loan_id: loan.loan_id)
 
@@ -187,21 +187,21 @@ defmodule Ecto.RepoTest do
   end
 
   test "insert!, update!, insert_or_update! and delete! fail on invalid changeset" do
-    invalid = %Ecto.Changeset{valid?: false, data: %SellOffer{}}
+    invalid = %Ecto.Changeset{valid?: false, data: %SellOffer{}, types: %{}}
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform insert because changeset is invalid", fn ->
       TestRepo.insert!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform update because changeset is invalid", fn ->
       TestRepo.update!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform insert because changeset is invalid", fn ->
       TestRepo.insert_or_update!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform delete because changeset is invalid", fn ->
       TestRepo.delete!(invalid)
     end
   end
