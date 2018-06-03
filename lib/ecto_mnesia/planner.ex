@@ -42,8 +42,8 @@ defmodule EctoMnesia.Planner do
   """
   def prepare(operation, %Ecto.Query{from: {table, schema}, order_bys: order_bys, limit: limit} = query) do
     ordering_fn = Ordering.get_ordering_fn(order_bys)
-    limit =  get_limit(limit)
-    limit_fn = if limit == nil, do: &(&1), else: &Enum.take(&1, limit)
+    limit = get_limit(limit)
+    limit_fn = if limit == nil, do: & &1, else: &Enum.take(&1, limit)
     context = Context.new(table, schema)
     {:nocache, {operation, query, {limit, limit_fn}, context, ordering_fn}}
   end
@@ -51,18 +51,27 @@ defmodule EctoMnesia.Planner do
   @doc """
   Perform `mnesia:select` on prepared query and convert the results to Ecto Schema.
   """
-  def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
-                      {:nocache, {:all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
-                      sources, preprocess, _opts) do
+  def execute(
+        _repo,
+        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        {:nocache, {:all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
+        sources,
+        preprocess,
+        _opts
+      ) do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
-    Logger.debug(fn -> "Selecting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
 
-    result = table
-    |> Table.select(match_spec)
-    |> Enum.map(&process_row(&1, preprocess, fields))
-    |> ordering_fn.()
-    |> limit_fn.()
+    Logger.debug(fn ->
+      "Selecting all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
+    end)
+
+    result =
+      table
+      |> Table.select(match_spec)
+      |> Enum.map(&process_row(&1, preprocess, fields))
+      |> ordering_fn.()
+      |> limit_fn.()
 
     {length(result), result}
   end
@@ -70,15 +79,24 @@ defmodule EctoMnesia.Planner do
   @doc """
   Deletes all records that match Ecto.Query
   """
-  def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
-                      {:nocache, {:delete_all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
-                      sources, preprocess, opts) do
+  def execute(
+        _repo,
+        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        {:nocache, {:delete_all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
+        sources,
+        preprocess,
+        opts
+      ) do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
-    Logger.debug(fn -> "Deleting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
+
+    Logger.debug(fn ->
+      "Deleting all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
+    end)
 
     table = Table.get_name(table)
+
     Table.transaction(fn ->
       table
       |> Table.select(match_spec)
@@ -93,14 +111,21 @@ defmodule EctoMnesia.Planner do
   @doc """
   Update all records by a Ecto.Query.
   """
-  def execute(_repo, %{sources: {{table, _schema}}, fields: fields, take: _take},
-                      {:nocache, {:update_all,
-                        %Ecto.Query{updates: updates} = query, {limit, limit_fn}, context, ordering_fn}},
-                      sources, preprocess, opts) do
+  def execute(
+        _repo,
+        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, {limit, limit_fn}, context, ordering_fn}},
+        sources,
+        preprocess,
+        opts
+      ) do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
-    Logger.debug(fn -> "Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
+
+    Logger.debug(fn ->
+      "Updating all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
+    end)
 
     table = Table.get_name(table)
     update = Update.update_record(updates, sources, context)
@@ -108,7 +133,7 @@ defmodule EctoMnesia.Planner do
     Table.transaction(fn ->
       table
       |> Table.select(match_spec)
-      |> Enum.map(fn [record_id|_] ->
+      |> Enum.map(fn [record_id | _] ->
         {:ok, result} = Table.update(table, record_id, update)
         result
       end)
@@ -120,17 +145,19 @@ defmodule EctoMnesia.Planner do
   defp return_all(records, ordering_fn, preprocess_fn, {limit, limit_fn}, opts) do
     case Keyword.get(opts, :returning) do
       true ->
-        result = records
-        |> Enum.map(fn record ->
-          record
-          |> Tuple.to_list()
-          |> List.delete_at(0)
-          |> preprocess_fn.()
-        end)
-        |> ordering_fn.()
-        |> limit_fn.()
+        result =
+          records
+          |> Enum.map(fn record ->
+            record
+            |> Tuple.to_list()
+            |> List.delete_at(0)
+            |> preprocess_fn.()
+          end)
+          |> ordering_fn.()
+          |> limit_fn.()
 
         {length(result), result}
+
       _ ->
         {min(limit, length(records)), nil}
     end
@@ -144,7 +171,8 @@ defmodule EctoMnesia.Planner do
           {nil, rest} -> {nil, rest}
           {val, rest} -> {process.(field, val, nil), rest}
         end
-      field, [h|t] ->
+
+      field, [h | t] ->
         {process.(field, h, nil), t}
     end)
     |> elem(0)
@@ -152,18 +180,26 @@ defmodule EctoMnesia.Planner do
 
   defp split_and_not_nil(rest, 0, true, _acc), do: {nil, rest}
   defp split_and_not_nil(rest, 0, false, acc), do: {:lists.reverse(acc), rest}
-  defp split_and_not_nil([nil|t], count, all_nil?, acc) do
-    split_and_not_nil(t, count - 1, all_nil?, [nil|acc])
+
+  defp split_and_not_nil([nil | t], count, all_nil?, acc) do
+    split_and_not_nil(t, count - 1, all_nil?, [nil | acc])
   end
-  defp split_and_not_nil([h|t], count, _all_nil?, acc) do
-    split_and_not_nil(t, count - 1, false, [h|acc])
+
+  defp split_and_not_nil([h | t], count, _all_nil?, acc) do
+    split_and_not_nil(t, count - 1, false, [h | acc])
   end
 
   @doc """
   Insert Ecto Schema struct to Mnesia database.
   """
-  def insert(_repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}}, sources,
-             _on_conflict, _returning, _opts) do
+  def insert(
+        _repo,
+        %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
+        sources,
+        _on_conflict,
+        _returning,
+        _opts
+      ) do
     do_insert(table, schema, autogenerate_id, sources)
   end
 
@@ -171,16 +207,26 @@ defmodule EctoMnesia.Planner do
   Insert all
   """
   # TODO: deal with `opts`: `on_conflict` and `returning`
-  def insert_all(repo, %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
-                 _header, rows, _on_conflict, _returning, _opts) do
+  def insert_all(
+        repo,
+        %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
+        _header,
+        rows,
+        _on_conflict,
+        _returning,
+        _opts
+      ) do
     table = Table.get_name(table)
-    result = Table.transaction(fn ->
-      Enum.reduce(rows, {0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
-    end)
+
+    result =
+      Table.transaction(fn ->
+        Enum.reduce(rows, {0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
+      end)
 
     case result do
       {:error, _reason} ->
         {0, nil}
+
       {count, _records} ->
         {count, nil}
     end
@@ -190,8 +236,10 @@ defmodule EctoMnesia.Planner do
     case do_insert(table, schema, autogenerate_id, params) do
       {:ok, record} ->
         {index + 1, [record] ++ acc}
+
       {:invalid, [{:unique, _pk_field}]} ->
         rollback(repo, nil)
+
       {:error, _reason} ->
         rollback(repo, nil)
     end
@@ -204,6 +252,7 @@ defmodule EctoMnesia.Planner do
     case Table.insert(table, record) do
       {:ok, ^record} ->
         {:ok, params}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -217,8 +266,10 @@ defmodule EctoMnesia.Planner do
     case Table.insert(table, record) do
       {:ok, ^record} ->
         {:ok, params}
+
       {:error, :already_exists} ->
         {:invalid, [{:unique, pk_field}]}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -242,6 +293,7 @@ defmodule EctoMnesia.Planner do
     case Table.transaction(fun) do
       {:error, reason} ->
         {:error, reason}
+
       result ->
         {:ok, result}
     end
@@ -262,6 +314,7 @@ defmodule EctoMnesia.Planner do
   """
   def delete(_repo, %{schema: schema, source: {_, table}, autogenerate_id: _autogenerate_id}, filter, _opts) do
     pk = get_pk!(filter, schema.__schema__(:primary_key))
+
     case Table.delete(table, pk) do
       {:ok, ^pk} -> {:ok, []}
       {:error, reason} -> {:error, reason}
@@ -271,8 +324,14 @@ defmodule EctoMnesia.Planner do
   @doc """
   Updates record stored in a Mnesia database.
   """
-  def update(_repo, %{schema: schema, source: {_, table}, autogenerate_id: _autogenerate_id},
-             params, filter, _autogen, _opts) do
+  def update(
+        _repo,
+        %{schema: schema, source: {_, table}, autogenerate_id: _autogenerate_id},
+        params,
+        filter,
+        _autogen,
+        _opts
+      ) do
     pk = get_pk!(filter, schema.__schema__(:primary_key))
     context = Context.new(table, schema)
     update = Update.from_keyword(schema, table, params, context)
@@ -286,6 +345,7 @@ defmodule EctoMnesia.Planner do
   # Extract primary key value or raise an error
   defp get_pk!(params, {pk_field, _pk_type}), do: get_pk!(params, pk_field)
   defp get_pk!(params, [pk_field]), do: get_pk!(params, pk_field)
+
   defp get_pk!(params, pk_field) do
     case Keyword.fetch(params, pk_field) do
       :error -> raise Ecto.NoPrimaryKeyValueError

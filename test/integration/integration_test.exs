@@ -1,5 +1,5 @@
 # Passed tests
-Code.require_file "../../deps/ecto/integration_test/cases/migrator.exs", __DIR__
+Code.require_file("../../deps/ecto/integration_test/cases/migrator.exs", __DIR__)
 
 # In progress
 # Code.require_file "../../deps/ecto/integration_test/cases/repo.exs", __DIR__

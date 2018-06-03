@@ -12,8 +12,10 @@ defmodule EctoMnesia.Record.Context do
   """
   def new(table, schema) when is_atom(table),
     do: table |> Atom.to_string() |> new(schema)
+
   def new(table, schema) when is_binary(table) and is_atom(schema) do
     table_name = Table.get_name(table)
+
     mnesia_attributes =
       case Table.attributes(table_name) do
         {:ok, name} -> name
@@ -35,9 +37,11 @@ defmodule EctoMnesia.Record.Context do
   Assigns `Ecto.Query` to a context and rebuilds MatchSpec with updated data.
   """
   def assign_query(_conext, %Ecto.SubQuery{}, _sources),
-    do: raise Ecto.Query.CompileError, "`Ecto.Query.subquery/1` is not supported by Mnesia adapter."
+    do: raise(Ecto.Query.CompileError, "`Ecto.Query.subquery/1` is not supported by Mnesia adapter.")
+
   def assign_query(_context, %Ecto.Query{havings: havings}, _sources) when is_list(havings) and length(havings) > 0,
-    do: raise Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter."
+    do: raise(Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter.")
+
   def assign_query(context, %Ecto.Query{} = query, sources) do
     context
     |> update_query_select(query)
@@ -48,8 +52,10 @@ defmodule EctoMnesia.Record.Context do
   # Stores `Ecto.Query.select` value into `context.select` field.
   defp update_query_select(context, nil),
     do: context
+
   defp update_query_select(context, %Ecto.Query{select: select}),
     do: update_query_select(context, select)
+
   defp update_query_select(context, select),
     do: %{context | query: %{context.query | select: select}}
 
@@ -73,9 +79,9 @@ defmodule EctoMnesia.Record.Context do
   Raises if field is not found in a context.
   """
   def find_field_index!(field, %Context{table: %Context.Table{structure: structure, name: name}})
-    when is_atom(field) do
+      when is_atom(field) do
     case Keyword.get(structure, field) do
-      nil -> raise ArgumentError, "Field `#{inspect field}` does not exist in table `#{inspect name}`"
+      nil -> raise ArgumentError, "Field `#{inspect(field)}` does not exist in table `#{inspect(name)}`"
       {index, _placeholder} -> index
     end
   end
@@ -86,12 +92,13 @@ defmodule EctoMnesia.Record.Context do
   Raises if field is not found in a context.
   """
   def find_field_placeholder!(field, %Context{table: %Context.Table{structure: structure, name: name}})
-    when is_atom(field) do
+      when is_atom(field) do
     case Keyword.get(structure, field) do
-      nil -> raise ArgumentError, "Field `#{inspect field}` does not exist in table `#{inspect name}`"
+      nil -> raise ArgumentError, "Field `#{inspect(field)}` does not exist in table `#{inspect(name)}`"
       {_index, placeholder} -> placeholder
     end
   end
+
   def find_field_placeholder!(field, %Context{}), do: field
 
   @doc """

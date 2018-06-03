@@ -34,23 +34,18 @@ defmodule EctoMnesia.Storage.MigratorTest do
   describe "create table" do
     test "when table does not exist" do
       assert :ok ==
-        run_migration({
-          :create,
-          %Table{name: @test_table_name},
-          [{:add, :id, :integer, []},
-           {:add, :my_field, :integer, []}]
-        })
+               run_migration({
+                 :create,
+                 %Table{name: @test_table_name},
+                 [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]
+               })
 
       assert [:id, :my_field] == get_attributes()
     end
 
     test "when table exists" do
       migration =
-        {:create,
-          %Table{name: @test_table_name},
-          [{:add, :id, :integer, []},
-           {:add, :my_field, :integer, []}]
-        }
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
 
       run_migration(migration)
 
@@ -63,23 +58,19 @@ defmodule EctoMnesia.Storage.MigratorTest do
   describe "create table if not exists" do
     test "when table does not exist" do
       assert :ok ==
-        run_migration({
-          :create_if_not_exists,
-          %Table{name: @test_table_name},
-          [{:add, :id, :integer, []},
-           {:add, :my_field, :integer, []}]
-        })
+               run_migration({
+                 :create_if_not_exists,
+                 %Table{name: @test_table_name},
+                 [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]
+               })
 
       assert [:id, :my_field] == get_attributes()
     end
 
     test "when table exists" do
       migration =
-        {:create_if_not_exists,
-          %Table{name: @test_table_name},
-          [{:add, :id, :integer, []},
-           {:add, :my_field, :integer, []}]
-        }
+        {:create_if_not_exists, %Table{name: @test_table_name},
+         [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
 
       assert :ok == run_migration(migration)
       assert :ok == run_migration(migration)
@@ -90,12 +81,7 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
   describe "alter table" do
     test "when table does not exist" do
-      migration =
-        {:alter,
-          %Table{name: @test_table_name},
-          [{:add, :id, :integer, []},
-           {:add, :my_field, :integer, []}]
-        }
+      migration = {:alter, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
 
       assert_raise RuntimeError, "Table migration_test_table does not exists", fn ->
         run_migration(migration)
@@ -104,21 +90,16 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
     test "when table exists" do
       migration =
-        {:create,
-          %Table{name: @test_table_name},
-          [{:add, :id, :integer, []},
-           {:add, :my_field, :integer, []}]
-        }
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
 
       run_migration(migration)
 
       assert :ok ==
-        run_migration({
-          :alter,
-          %Table{name: @test_table_name},
-          [{:add, :new_field, :integer, []},
-           {:add, :my_second_field, :integer, []}]
-        })
+               run_migration({
+                 :alter,
+                 %Table{name: @test_table_name},
+                 [{:add, :new_field, :integer, []}, {:add, :my_second_field, :integer, []}]
+               })
 
       assert [:id, :my_field, :new_field, :my_second_field] == get_attributes()
     end
@@ -129,8 +110,7 @@ defmodule EctoMnesia.Storage.MigratorTest do
       run_migration({
         :create,
         %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
+        [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]
       })
 
       MnesiaTable.insert(@test_table_name, {@test_table_name, @test_record_key, 123})
@@ -162,11 +142,7 @@ defmodule EctoMnesia.Storage.MigratorTest do
     end
 
     test "modify field" do
-      assert :ok ==
-        run_migration({:alter,
-          %Table{name: @test_table_name},
-          [{:modify, :id, :string, []}]
-        })
+      assert :ok == run_migration({:alter, %Table{name: @test_table_name}, [{:modify, :id, :string, []}]})
 
       assert [:id, :my_field] == get_attributes()
       assert {:migration_test_table, 1, 123} == get_record()
@@ -175,11 +151,11 @@ defmodule EctoMnesia.Storage.MigratorTest do
     test "modify not existing field" do
       assert_raise RuntimeError, "Field unknown_field not found", fn ->
         assert :ok ==
-          run_migration({
-            :alter,
-            %Table{name: @test_table_name},
-            [{:modify, :unknown_field, :string, []}]
-          })
+                 run_migration({
+                   :alter,
+                   %Table{name: @test_table_name},
+                   [{:modify, :unknown_field, :string, []}]
+                 })
       end
 
       assert [:id, :my_field] == get_attributes()
@@ -187,12 +163,7 @@ defmodule EctoMnesia.Storage.MigratorTest do
     end
 
     test "rename field" do
-      assert :ok ==
-        run_migration({:rename,
-          %Table{name: @test_table_name},
-          :id,
-          :new_id
-        })
+      assert :ok == run_migration({:rename, %Table{name: @test_table_name}, :id, :new_id})
 
       assert [:new_id, :my_field] == get_attributes()
       assert {:migration_test_table, 1, 123} == get_record()
@@ -201,11 +172,11 @@ defmodule EctoMnesia.Storage.MigratorTest do
     test "rename not existing field" do
       assert_raise RuntimeError, "Field unknown_field not found", fn ->
         assert :ok ==
-          run_migration({
-            :alter,
-            %Table{name: @test_table_name},
-            [{:modify, :unknown_field, :string, []}]
-          })
+                 run_migration({
+                   :alter,
+                   %Table{name: @test_table_name},
+                   [{:modify, :unknown_field, :string, []}]
+                 })
       end
 
       assert [:id, :my_field] == get_attributes()
@@ -213,19 +184,16 @@ defmodule EctoMnesia.Storage.MigratorTest do
     end
 
     test "delete field" do
-      run_migration({:alter,
-        %Table{name: @test_table_name},
-        [{:add, :new_field, :integer, []}]
-      })
+      run_migration({:alter, %Table{name: @test_table_name}, [{:add, :new_field, :integer, []}]})
 
       assert {:migration_test_table, 1, 123, nil} == get_record()
 
       assert :ok ==
-        run_migration({
-          :alter,
-          %Table{name: @test_table_name},
-          [{:remove, :new_field}]
-        })
+               run_migration({
+                 :alter,
+                 %Table{name: @test_table_name},
+                 [{:remove, :new_field}]
+               })
 
       assert [:id, :my_field] == get_attributes()
       assert {:migration_test_table, 1, 123} == get_record()
@@ -233,11 +201,7 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
     test "delete not existing field" do
       assert_raise RuntimeError, "Field unknown_field not found", fn ->
-        assert :ok ==
-          run_migration({:alter,
-            %Table{name: @test_table_name},
-            [{:remove, :unknown_field}]
-          })
+        assert :ok == run_migration({:alter, %Table{name: @test_table_name}, [{:remove, :unknown_field}]})
       end
 
       assert [:id, :my_field] == get_attributes()
@@ -254,11 +218,7 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
     test "when table exists" do
       migration =
-        {:create,
-          %Table{name: @test_table_name},
-          [{:add, :id, :integer, []},
-           {:add, :my_field, :integer, []}]
-        }
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
 
       run_migration(migration)
 
@@ -272,11 +232,8 @@ defmodule EctoMnesia.Storage.MigratorTest do
     end
 
     test "when table exists" do
-      migration = {:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      }
+      migration =
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
 
       run_migration(migration)
 
@@ -286,11 +243,9 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
   describe "create index" do
     setup do
-      run_migration({:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      })
+      run_migration(
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
+      )
     end
 
     test "when index does not exist" do
@@ -311,11 +266,9 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
   describe "create index if not exists" do
     setup do
-      run_migration({:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      })
+      run_migration(
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
+      )
     end
 
     test "when index does not exist" do
@@ -332,11 +285,9 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
   describe "drop index" do
     setup do
-      run_migration({:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      })
+      run_migration(
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
+      )
     end
 
     test "when index does not exist" do
@@ -354,11 +305,9 @@ defmodule EctoMnesia.Storage.MigratorTest do
 
   describe "drop index if exists" do
     setup do
-      run_migration({:create,
-        %Table{name: @test_table_name},
-        [{:add, :id, :integer, []},
-         {:add, :my_field, :integer, []}]
-      })
+      run_migration(
+        {:create, %Table{name: @test_table_name}, [{:add, :id, :integer, []}, {:add, :my_field, :integer, []}]}
+      )
     end
 
     test "when index does not exist" do

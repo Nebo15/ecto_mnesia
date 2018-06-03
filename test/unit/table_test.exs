@@ -5,9 +5,9 @@ defmodule EctoMnesia.TableTest do
 
   @test_table :sell_offer
   @test_record_key 1
-  @test_record {:sell_offer, @test_record_key, 123, "loan-007", nil, nil, 9.23, nil, true,
-                nil, nil, nil, 26, 1.0e3, 20, 30, "AB", nil, 100, "100", nil, nil, "ok", nil, true,
-                {{2016, 11, 18}, {18, 43, 8, 496_985}}, {{2016, 11, 18}, {18, 43, 8, 502_628}}}
+  @test_record {:sell_offer, @test_record_key, 123, "loan-007", nil, nil, 9.23, nil, true, nil, nil, nil, 26, 1.0e3, 20,
+                30, "AB", nil, 100, "100", nil, nil, "ok", nil, true, {{2016, 11, 18}, {18, 43, 8, 496_985}},
+                {{2016, 11, 18}, {18, 43, 8, 502_628}}}
 
   setup do
     :mnesia.clear_table(:sell_offer)
@@ -34,35 +34,45 @@ defmodule EctoMnesia.TableTest do
   describe "select record" do
     test "all" do
       Table.insert(@test_table, @test_record)
-      assert [@test_record] == Table.select(@test_table,
-        [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-           :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
-           :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
-          [{:==, :"$1", @test_record_key}],
-          [:"$_"]}
-        ])
+
+      assert [@test_record] ==
+               Table.select(
+                 @test_table,
+                 [
+                   {{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9", :"$10", :"$11", :"$12",
+                     :"$13", :"$14", :"$15", :"$16", :"$17", :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24",
+                     :"$25", :"$26"}, [{:==, :"$1", @test_record_key}], [:"$_"]}
+                 ]
+               )
     end
 
     test "without results" do
-      assert [] == Table.select(@test_table,
-        [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-           :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
-           :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
-          [{:==, :"$1", @test_record_key}],
-          [:"$_"]}
-        ])
+      assert [] ==
+               Table.select(
+                 @test_table,
+                 [
+                   {{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9", :"$10", :"$11", :"$12",
+                     :"$13", :"$14", :"$15", :"$16", :"$17", :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24",
+                     :"$25", :"$26"}, [{:==, :"$1", @test_record_key}], [:"$_"]}
+                 ]
+               )
     end
 
     test "with limit" do
       Table.insert(@test_table, @test_record)
       Table.insert(@test_table, @test_record)
-      results = Table.select(@test_table,
-        [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-           :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
-           :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
-          [{:==, :"$1", @test_record_key}],
-          [:"$_"]
-        }], 1)
+
+      results =
+        Table.select(
+          @test_table,
+          [
+            {{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9", :"$10", :"$11", :"$12",
+              :"$13", :"$14", :"$15", :"$16", :"$17", :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
+              :"$26"}, [{:==, :"$1", @test_record_key}], [:"$_"]}
+          ],
+          1
+        )
+
       assert 1 == length(results)
       assert [@test_record] == results
     end
@@ -88,9 +98,10 @@ defmodule EctoMnesia.TableTest do
       update = [{1, 345}]
       assert {:ok, _} = Table.update(@test_table, @test_record_key, update)
 
-      assert 345 == @test_table
-      |> Table.get(@test_record_key)
-      |> elem(2)
+      assert 345 ==
+               @test_table
+               |> Table.get(@test_record_key)
+               |> elem(2)
     end
 
     test "existing with nil" do
@@ -100,9 +111,9 @@ defmodule EctoMnesia.TableTest do
       assert {:ok, _} = Table.update(@test_table, @test_record_key, update)
 
       assert nil ==
-        @test_table
-        |> Table.get(@test_record_key)
-        |> elem(2)
+               @test_table
+               |> Table.get(@test_record_key)
+               |> elem(2)
     end
 
     test "not existing" do
@@ -113,11 +124,13 @@ defmodule EctoMnesia.TableTest do
   describe "stream" do
     test "with Enum" do
       Table.insert(@test_table, @test_record)
-      res = Table.transaction(fn ->
-        :sell_offer
-        |> Table.Stream.new()
-        |> Enum.reduce([], fn so, acc -> [so] ++ acc end)
-      end)
+
+      res =
+        Table.transaction(fn ->
+          :sell_offer
+          |> Table.Stream.new()
+          |> Enum.reduce([], fn so, acc -> [so] ++ acc end)
+        end)
 
       assert 1 == length(res)
     end
