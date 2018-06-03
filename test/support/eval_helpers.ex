@@ -1,4 +1,6 @@
 defmodule Support.EvalHelpers do
+  @moduledoc false
+
   @doc """
   Delay the evaluation of the code snippet so
   we can verify compile time behaviour via eval.

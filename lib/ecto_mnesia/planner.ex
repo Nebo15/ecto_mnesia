@@ -56,7 +56,7 @@ defmodule EctoMnesia.Planner do
                       sources, preprocess, _opts) do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
-    Logger.debug("Selecting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
+    Logger.debug(fn -> "Selecting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
 
     result = table
     |> Table.select(match_spec)
@@ -76,7 +76,7 @@ defmodule EctoMnesia.Planner do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
-    Logger.debug("Deleting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
+    Logger.debug(fn -> "Deleting all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
 
     table = Table.get_name(table)
     Table.transaction(fn ->
@@ -100,7 +100,7 @@ defmodule EctoMnesia.Planner do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
     preprocess_fn = &process_row(&1, preprocess, fields)
-    Logger.debug("Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}")
+    Logger.debug(fn -> "Updating all records by match specification `#{inspect match_spec}` with limit #{inspect limit}" end)
 
     table = Table.get_name(table)
     update = Update.update_record(updates, sources, context)

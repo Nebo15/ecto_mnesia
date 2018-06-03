@@ -27,12 +27,13 @@ defmodule EctoMnesia.Context.MatchSpecTest do
     test "in expression style" do
       status = "foo"
       age = 25
+      sell_offer = from(so in "sell_offer")
 
-      query = from(so in "sell_offer") |> where(status: ^status)
+      query = sell_offer |> where(status: ^status)
       assert [{_, [{:==, @status_field_id, ^status}], _}] = ms(query)
 
       # Multiple sources
-      query = from(so in "sell_offer") |> where(status: ^status, age: ^age)
+      query = sell_offer |> where(status: ^status, age: ^age)
       assert [{_, [{:and, {:==, @status_field_id, ^status}, {:==, @age_field_id, ^age}}], _}] = ms(query)
     end
 
@@ -84,7 +85,9 @@ defmodule EctoMnesia.Context.MatchSpecTest do
 
   describe "where" do
     test "in expression style" do
-      query = from(so in "sell_offer") |> where(status: "foo")
+      sell_offer = from(so in "sell_offer")
+
+      query = sell_offer |> where(status: "foo")
       assert [{_, [{:==, @status_field_id, "foo"}], _}] = ms(query)
     end
 
@@ -193,7 +196,9 @@ defmodule EctoMnesia.Context.MatchSpecTest do
   describe "having" do
     test "is not supported" do
       assert_raise Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter.", fn ->
-        ms(from(p in "sell_offer") |> having(status: "foo"))
+        sell_offer = from(p in "sell_offer")
+
+        ms(sell_offer |> having(status: "foo"))
       end
     end
   end

@@ -62,5 +62,9 @@ defmodule EctoMnesia.Table.Stream do
     def member?(_, _) do
       {:error, __MODULE__}
     end
+
+    def slice(_) do
+      {:error, __MODULE__}
+    end
   end
 end

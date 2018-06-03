@@ -44,12 +44,11 @@ defmodule EctoMnesia.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:confex, "~> 3.2"},
-     {:ecto, "~> 2.1.0"},
-     {:ex_doc, ">= 0.0.0", only: [:dev, :test]},
-     {:excoveralls, ">= 0.5.0", only: [:dev, :test]},
-     {:dogma, "> 0.1.0", only: [:dev, :test]},
-     {:credo, ">= 0.4.8", only: [:dev, :test]}]
+    [{:confex, "~> 3.3"},
+     {:decimal, "~> 1.5"},
+     {:ecto, "~> 2.1.6"},
+     {:ex_doc, "~> 0.18", only: [:dev, :test]},
+     {:excoveralls, "~> 0.8", only: [:dev, :test]}]
   end
 
   # Settings for publishing in Hex package manager:
