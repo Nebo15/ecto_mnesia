@@ -151,6 +151,13 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
     |> get_binded()
   end
 
+  # Tuples need to wrapped in extra layer of {}.
+  # (And for nested tuples this needs to happen at each level.)
+  def unbind(value, sources) when is_tuple(value) do
+    elems = :erlang.tuple_to_list(value)
+    unbound_elems = :lists.map(&unbind(&1, sources), elems)
+    {:erlang.list_to_tuple(unbound_elems)}
+  end
   def unbind(value, _sources), do: value
 
   # Binded variable value
