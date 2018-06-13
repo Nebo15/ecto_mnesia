@@ -59,8 +59,7 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
   defp match_conditions(%Ecto.Query{wheres: wheres}, sources, context),
     do: match_conditions(wheres, sources, context, [])
 
-  defp match_conditions([], _sources, _context, acc),
-    do: acc
+  defp match_conditions([], _sources, _context, acc), do: acc
 
   defp match_conditions([%{expr: expr, params: params} | tail], sources, context, acc) do
     condition = condition_expression(expr, merge_sources(sources, params), context)
@@ -158,6 +157,7 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
     unbound_elems = :lists.map(&unbind(&1, sources), elems)
     {:erlang.list_to_tuple(unbound_elems)}
   end
+
   def unbind(value, _sources), do: value
 
   # Binded variable value
