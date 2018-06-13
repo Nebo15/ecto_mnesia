@@ -196,9 +196,15 @@ defmodule EctoMnesia.AdapterTest do
   describe "select" do
     setup do
       {:ok, loan1} =
-        TestRepo.insert(%SellOffer{loan_id: "hello", age: 11, loan_changes: ["old_application", "new_application"], booked_at: Ecto.DateTime.cast!(~N[2018-06-12 23:38:40])})
+        TestRepo.insert(%SellOffer{
+          loan_id: "hello",
+          age: 11,
+          loan_changes: ["old_application", "new_application"],
+          booked_at: Ecto.DateTime.cast!(~N[2018-06-12 23:38:40])
+        })
 
-      {:ok, loan2} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 15, booked_at: Ecto.DateTime.cast!(~N[2018-06-12 23:48:40])})
+      {:ok, loan2} =
+        TestRepo.insert(%SellOffer{loan_id: "hello", age: 15, booked_at: Ecto.DateTime.cast!(~N[2018-06-12 23:48:40])})
 
       %{loan1: loan1, loan2: loan2}
     end
