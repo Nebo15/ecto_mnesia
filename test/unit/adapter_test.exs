@@ -196,9 +196,9 @@ defmodule EctoMnesia.AdapterTest do
   describe "select" do
     setup do
       {:ok, loan1} =
-        TestRepo.insert(%SellOffer{loan_id: "hello", age: 11, loan_changes: ["old_application", "new_application"]})
+        TestRepo.insert(%SellOffer{loan_id: "hello", age: 11, loan_changes: ["old_application", "new_application"], booked_at: Ecto.DateTime.cast!(~N[2018-06-12 23:38:40])})
 
-      {:ok, loan2} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 15})
+      {:ok, loan2} = TestRepo.insert(%SellOffer{loan_id: "hello", age: 15, booked_at: Ecto.DateTime.cast!(~N[2018-06-12 23:48:40])})
 
       %{loan1: loan1, loan2: loan2}
     end
@@ -225,6 +225,12 @@ defmodule EctoMnesia.AdapterTest do
       assert_raise RuntimeError, "Complex :in queries is not supported by the Mnesia adapter.", fn ->
         TestRepo.all(from(so in SellOffer, where: ^change in so.loan_changes))
       end
+    end
+
+    test "where with datetime (tests tuple support of MatchSpec)" do
+      datetime = ~N[2018-06-12 23:00:00]
+      res = TestRepo.all(from(so in SellOffer, where: so.inserted_at >= ^datetime))
+      assert length(res) == 2
     end
 
     test "structured" do
