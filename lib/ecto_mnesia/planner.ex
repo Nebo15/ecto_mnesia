@@ -53,7 +53,7 @@ defmodule EctoMnesia.Planner do
   """
   def execute(
         _repo,
-        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        %{sources: {{table, _schema}}},
         {:nocache, {:all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
         sources,
         preprocess,
@@ -66,10 +66,15 @@ defmodule EctoMnesia.Planner do
       "Selecting all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
     end)
 
+    # still dont know where to get fields from
+    # as they are not coming on the parameters of this function
+    fields = []
+    mapper = processor(preprocess, fields, sources)
+
     result =
       table
       |> Table.select(match_spec)
-      |> Enum.map(&process_row(&1, preprocess, fields))
+      |> Enum.map(mapper)
       |> ordering_fn.()
       |> limit_fn.()
 
@@ -81,7 +86,7 @@ defmodule EctoMnesia.Planner do
   """
   def execute(
         _repo,
-        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        %{sources: {{table, _schema}}},
         {:nocache, {:delete_all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
         sources,
         preprocess,
@@ -89,7 +94,11 @@ defmodule EctoMnesia.Planner do
       ) do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
-    preprocess_fn = &process_row(&1, preprocess, fields)
+
+    # still dont know where to get fields from
+    # as they are not coming on the parameters of this function
+    fields = []
+    mapper = processor(preprocess, fields, sources)
 
     Logger.debug(fn ->
       "Deleting all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
@@ -104,7 +113,7 @@ defmodule EctoMnesia.Planner do
         {:ok, _} = Table.delete(table, List.first(record))
         record
       end)
-      |> return_all(ordering_fn, preprocess_fn, {limit, limit_fn}, opts)
+      |> return_all(ordering_fn, mapper, {limit, limit_fn}, opts)
     end)
   end
 
@@ -113,7 +122,7 @@ defmodule EctoMnesia.Planner do
   """
   def execute(
         _repo,
-        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        %{sources: {{table, _schema}}},
         {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, {limit, limit_fn}, context, ordering_fn}},
         sources,
         preprocess,
@@ -121,7 +130,11 @@ defmodule EctoMnesia.Planner do
       ) do
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
-    preprocess_fn = &process_row(&1, preprocess, fields)
+
+    # still dont know where to get fields from
+    # as they are not coming on the parameters of this function
+    fields = []
+    mapper = processor(preprocess, fields, sources)
 
     Logger.debug(fn ->
       "Updating all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
@@ -137,7 +150,7 @@ defmodule EctoMnesia.Planner do
         {:ok, result} = Table.update(table, record_id, update)
         result
       end)
-      |> return_all(ordering_fn, preprocess_fn, {limit, limit_fn}, opts)
+      |> return_all(ordering_fn, mapper, {limit, limit_fn}, opts)
     end)
   end
 
@@ -163,7 +176,19 @@ defmodule EctoMnesia.Planner do
     end
   end
 
-  defp process_row(row, process, fields) do
+  defp processor(process, fields, sources) when is_function(process, 3) do
+    &process_row(&1, process, fields, sources)
+  end
+
+  defp processor(process, _fields, _source) when is_function(process, 1) do
+    process
+  end
+
+  defp processor(nil, _fields, _source) do
+    nil
+  end
+
+  defp process_row(row, process, fields, _sources) do
     fields
     |> Enum.map_reduce(row, fn
       {:&, _, [_, _, counter]} = field, acc ->
@@ -251,7 +276,9 @@ defmodule EctoMnesia.Planner do
 
     case Table.insert(table, record) do
       {:ok, ^record} ->
-        {:ok, params}
+        # this result should returns field types
+        # but dont know how to get it
+        {:ok, []}
 
       {:error, reason} ->
         {:error, reason}
@@ -265,7 +292,9 @@ defmodule EctoMnesia.Planner do
 
     case Table.insert(table, record) do
       {:ok, ^record} ->
-        {:ok, params}
+        # this result should returns field types
+        # but dont know how to get it
+        {:ok, []}
 
       {:error, :already_exists} ->
         {:invalid, [{:unique, pk_field}]}
