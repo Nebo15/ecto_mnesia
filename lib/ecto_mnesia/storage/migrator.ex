@@ -118,6 +118,8 @@ defmodule EctoMnesia.Storage.Migrator do
 
   # Indexes
   def execute(_repo, {:create, %Ecto.Migration.Index{table: table, columns: columns}}, _opts) do
+    table = if String.valid?(table), do: String.to_atom(table), else: table
+
     columns
     |> Enum.uniq()
     |> Enum.map(fn index ->
@@ -168,7 +170,9 @@ defmodule EctoMnesia.Storage.Migrator do
   # Helpers
   defp do_create_table(repo, table, type, attributes) do
     config = conf(repo)
+    attributes = if length(attributes) == 1, do: attributes ++ [:id], else: attributes
     tab_def = [{:attributes, attributes}, {config[:storage_type], [config[:host]]}, {:type, get_engine(type)}]
+    table = if String.valid?(table), do: String.to_atom(table), else: table
 
     case Mnesia.create_table(table, tab_def) do
       {:atomic, :ok} ->
@@ -247,8 +251,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> List.to_tuple()
   end
 
-  def find_field_index(fields, field),
-    do: Enum.find_index(fields, &(&1 == field))
+  def find_field_index(fields, field), do: Enum.find_index(fields, &(&1 == field))
 
   def find_field_index(fields, field, data_migrations) do
     case Enum.find(data_migrations, fn {_old_name, new_name} -> new_name == field end) do
@@ -278,6 +281,5 @@ defmodule EctoMnesia.Storage.Migrator do
     end
   end
 
-  defp conf(repo),
-    do: EctoMnesia.Storage.conf(repo.config)
+  defp conf(repo), do: EctoMnesia.Storage.conf(repo.config)
 end
