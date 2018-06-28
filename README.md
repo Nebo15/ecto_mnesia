@@ -7,7 +7,8 @@ Ecto 2.X adapter for Mnesia Erlang term database. In most cases it can be used a
 Supported features:
 
 - Compatible `Ecto.Repo` API.
-- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. Also adapter emulates `query.select` and `query.order_bys`, `select .. in [..]` behaviors, even though Mnesia itself does not support them.
+- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. 
+- Emulated `query.select` and `query.order_bys`, `select .. in [..]`. (Emulating is slow for any large dataset, `O(n * log n)`.)
 - Auto-generated (via sequence table) `:id` primary keys.
 - Migrations and database setup via `Ecto.Migrations`.
 - Transactions.
@@ -39,11 +40,13 @@ We have a production task that needs low read-latency database and our data fits
 
 Why do we need an adapter? We don't want to lock us to any specific database, since requirements can change. Ecto allows to switch databases by simply modifying the config, and we might want to go back to Postres or another DB.
 
-### Clustering
+### Clustering and using Mnesia for your project
 
-We don't recommend using distributed Mnesia, because it's neither an AP, nor a CP database. (And there is no such thing as an AC DB.) **Mnesia requires you to handle network partitions (split brains) manually.**
+If you use Mnesia - you either get a distributed system from day one or a single node with low availability. Very few people really want any of that options. Use it wisely.
 
-So clustering should be an option only when you are absolutely sure about how to recover from split-brains. In general, if you are not sure what a network split is, don't use distributed Mnesia.
+Specifically Mnesia it's neither an AP, nor a CP database; requires you to handle network partitions (split brains) manually; has much less documentation available compared to a more common databases (like PostgreSQL).
+
+Please, pick your tools wisely and think through how you would use them in production.
 
 ### Mnesia configuration from `config.exs`
 
