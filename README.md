@@ -42,9 +42,7 @@ Why do we need an adapter? We don't want to lock us to any specific database, si
 
 ### Clustering and using Mnesia for your project
 
-If you use Mnesia - you either get a distributed system from day one or a single node with low availability. Very few people really want any of that options. Use it wisely.
-
-Specifically Mnesia it's neither an AP, nor a CP database; requires you to handle network partitions (split brains) manually; has much less documentation available compared to a more common databases (like PostgreSQL).
+If you use Mnesia - you either get a distributed system from day one or a single node with low availability. Very few people really want any of that options. Specifically Mnesia it's neither an AP, nor a CP database; requires you to handle network partitions (split brains) manually; has much less documentation available compared to a more common databases (like PostgreSQL).
 
 Please, pick your tools wisely and think through how you would use them in production.
 
