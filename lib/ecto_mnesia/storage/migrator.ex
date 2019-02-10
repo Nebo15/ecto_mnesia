@@ -123,7 +123,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.add_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
+        {:aborted, {:node_not_running, not_found_node}} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:already_exists, ^table, _}} -> raise "Index for field #{index} in table #{table} already exists"
       end
     end)
@@ -135,7 +135,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.add_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
+        {:aborted, {:node_not_running, not_found_node}} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:already_exists, ^table, _}} -> :ok
       end
     end)
@@ -147,7 +147,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.del_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
+        {:aborted, {:node_not_running, not_found_node}} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:no_exists, ^table, _}} -> raise "Index for field #{index} in table #{table} does not exists"
       end
     end)
@@ -159,7 +159,7 @@ defmodule EctoMnesia.Storage.Migrator do
     |> Enum.map(fn index ->
       case Mnesia.del_table_index(table, index) do
         {:atomic, :ok} -> :ok
-        {:node_not_running, not_found_node} -> raise "Node #{inspect(not_found_node)} is not started"
+        {:aborted, {:node_not_running, not_found_node}} -> raise "Node #{inspect(not_found_node)} is not started"
         {:aborted, {:no_exists, ^table, _}} -> :ok
       end
     end)
@@ -198,7 +198,9 @@ defmodule EctoMnesia.Storage.Migrator do
 
     case Enum.find_index(fields, &(&1 == old_field)) do
       nil ->
-        if on_not_found == :raise, do: raise("Field #{old_field} not found", else: fields)
+        if on_not_found == :raise,
+          do: raise("Field #{old_field} not found"),
+          else: fields
 
       index when is_number(index) ->
         List.replace_at(fields, index, new_field)
