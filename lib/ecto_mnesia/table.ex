@@ -23,7 +23,7 @@ defmodule EctoMnesia.Table do
   defp _insert(table, record) do
     case Mnesia.write(table, record, :write) do
       :ok -> {:ok, record}
-      error -> {:error, error}
+      {:aborted, reason} -> {:error, reason}
     end
   end
 
