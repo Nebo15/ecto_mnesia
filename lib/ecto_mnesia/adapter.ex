@@ -64,7 +64,7 @@ defmodule EctoMnesia.Adapter do
   defdelegate delete(repo, query_meta, filter, opts), to: @adapter_implementation
   @doc false
   def stream(_, _, _, _, _, _),
-    do: raise ArgumentError, "stream/6 is not supported by adapter, use EctoMnesia.Table.Stream.new/2 instead"
+    do: raise(ArgumentError, "stream/6 is not supported by adapter, use EctoMnesia.Table.Stream.new/2 instead")
 
   @doc false
   defdelegate transaction(repo, opts, fun), to: @adapter_implementation

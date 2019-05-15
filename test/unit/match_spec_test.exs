@@ -15,24 +15,27 @@ defmodule EctoMnesia.Context.MatchSpecTest do
     |> Context.assign_query(query, args)
     |> Context.get_match_spec()
   end
+
   defp ms({%Ecto.Query{} = query, args}) do
     "sell_offer"
     |> Context.new(SellOffer)
     |> Context.assign_query(query, args)
     |> Context.get_match_spec()
   end
+
   defp ms(query), do: ms({query, []})
 
   describe "query building" do
     test "in expression style" do
       status = "foo"
       age = 25
+      sell_offer = from(so in "sell_offer")
 
-      query = from(so in "sell_offer") |> where(status: ^status)
+      query = sell_offer |> where(status: ^status)
       assert [{_, [{:==, @status_field_id, ^status}], _}] = ms(query)
 
       # Multiple sources
-      query = from(so in "sell_offer") |> where(status: ^status, age: ^age)
+      query = sell_offer |> where(status: ^status, age: ^age)
       assert [{_, [{:and, {:==, @status_field_id, ^status}, {:==, @age_field_id, ^age}}], _}] = ms(query)
     end
 
@@ -49,42 +52,125 @@ defmodule EctoMnesia.Context.MatchSpecTest do
 
   describe "from" do
     test "in expression style" do
-      assert [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-                :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
-                :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
-               [],
-               [[:"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-               :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17",
-               :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
-               :"$26"]]}] == ms(quote_and_eval(from("sell_offer", [])))
+      assert [
+               {{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9", :"$10", :"$11", :"$12",
+                 :"$13", :"$14", :"$15", :"$16", :"$17", :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
+                 :"$26"}, [],
+                [
+                  [
+                    :"$1",
+                    :"$2",
+                    :"$3",
+                    :"$4",
+                    :"$5",
+                    :"$6",
+                    :"$7",
+                    :"$8",
+                    :"$9",
+                    :"$10",
+                    :"$11",
+                    :"$12",
+                    :"$13",
+                    :"$14",
+                    :"$15",
+                    :"$16",
+                    :"$17",
+                    :"$18",
+                    :"$19",
+                    :"$20",
+                    :"$21",
+                    :"$22",
+                    :"$23",
+                    :"$24",
+                    :"$25",
+                    :"$26"
+                  ]
+                ]}
+             ] == ms(quote_and_eval(from("sell_offer", [])))
     end
 
     test "in keyword style" do
       # With name source
-      assert [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-                :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
-                :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
-               [],
-               [[:"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-               :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17",
-               :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
-               :"$26"]]}] == ms(quote_and_eval(from so in SellOffer))
+      assert [
+               {{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9", :"$10", :"$11", :"$12",
+                 :"$13", :"$14", :"$15", :"$16", :"$17", :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
+                 :"$26"}, [],
+                [
+                  [
+                    :"$1",
+                    :"$2",
+                    :"$3",
+                    :"$4",
+                    :"$5",
+                    :"$6",
+                    :"$7",
+                    :"$8",
+                    :"$9",
+                    :"$10",
+                    :"$11",
+                    :"$12",
+                    :"$13",
+                    :"$14",
+                    :"$15",
+                    :"$16",
+                    :"$17",
+                    :"$18",
+                    :"$19",
+                    :"$20",
+                    :"$21",
+                    :"$22",
+                    :"$23",
+                    :"$24",
+                    :"$25",
+                    :"$26"
+                  ]
+                ]}
+             ] == ms(quote_and_eval(from(so in SellOffer)))
 
       # Without name source
-      assert [{{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-                :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17", :"$18",
-                :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25", :"$26"},
-               [],
-               [[:"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9",
-               :"$10", :"$11", :"$12", :"$13", :"$14", :"$15", :"$16", :"$17",
-               :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
-               :"$26"]]}] == ms(quote_and_eval(from SellOffer))
+      assert [
+               {{:sell_offer, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9", :"$10", :"$11", :"$12",
+                 :"$13", :"$14", :"$15", :"$16", :"$17", :"$18", :"$19", :"$20", :"$21", :"$22", :"$23", :"$24", :"$25",
+                 :"$26"}, [],
+                [
+                  [
+                    :"$1",
+                    :"$2",
+                    :"$3",
+                    :"$4",
+                    :"$5",
+                    :"$6",
+                    :"$7",
+                    :"$8",
+                    :"$9",
+                    :"$10",
+                    :"$11",
+                    :"$12",
+                    :"$13",
+                    :"$14",
+                    :"$15",
+                    :"$16",
+                    :"$17",
+                    :"$18",
+                    :"$19",
+                    :"$20",
+                    :"$21",
+                    :"$22",
+                    :"$23",
+                    :"$24",
+                    :"$25",
+                    :"$26"
+                  ]
+                ]}
+             ] == ms(quote_and_eval(from(SellOffer)))
     end
   end
 
   describe "where" do
     test "in expression style" do
-      query = from(so in "sell_offer") |> where(status: "foo")
+      sell_offer = from(so in "sell_offer")
+
+      query = sell_offer |> where(status: "foo")
       assert [{_, [{:==, @status_field_id, "foo"}], _}] = ms(query)
     end
 
@@ -98,64 +184,66 @@ defmodule EctoMnesia.Context.MatchSpecTest do
     end
 
     test "by :id field" do
-      query = from so in SellOffer, where: so.id == 11
+      query = from(so in SellOffer, where: so.id == 11)
       assert [{_, [{:==, @pk_field_id, 11}], _}] = ms(query)
     end
 
     test "with `>`" do
-      query = from so in SellOffer, where: so.age > 25
+      query = from(so in SellOffer, where: so.age > 25)
       assert [{_, [{:>, @age_field_id, 25}], _}] = ms(query)
     end
 
     test "with `<`" do
-      query = from so in SellOffer, where: so.age < 25
+      query = from(so in SellOffer, where: so.age < 25)
       assert [{_, [{:<, @age_field_id, 25}], _}] = ms(query)
     end
 
     test "with `>=`" do
-      query = from so in SellOffer, where: so.age >= 26
+      query = from(so in SellOffer, where: so.age >= 26)
       assert [{_, [{:>=, @age_field_id, 26}], _}] = ms(query)
     end
 
     test "with `<=`" do
-      query = from so in SellOffer, where: so.age <= 23
+      query = from(so in SellOffer, where: so.age <= 23)
       assert [{_, [{:"=<", @age_field_id, 23}], _}] = ms(query)
     end
 
     test "with `==`" do
-      query = from so in SellOffer, where: so.age == 26
+      query = from(so in SellOffer, where: so.age == 26)
       assert [{_, [{:==, @age_field_id, 26}], _}] = ms(query)
     end
 
-   test "with `!=`" do
-      query = from so in SellOffer, where: so.age != 26
+    test "with `!=`" do
+      query = from(so in SellOffer, where: so.age != 26)
       assert [{_, [{:"/=", @age_field_id, 26}], _}] = ms(query)
     end
 
     test "with `and`" do
-      query = from so in SellOffer, where: so.age != 26 and so.age != 21
+      query = from(so in SellOffer, where: so.age != 26 and so.age != 21)
       assert [{_, [{:and, {:"/=", @age_field_id, 26}, {:"/=", @age_field_id, 21}}], _}] = ms(query)
     end
 
     test "with `or`" do
-      query = from so in SellOffer, where: so.age != 26 or so.age != 21
+      query = from(so in SellOffer, where: so.age != 26 or so.age != 21)
       assert [{_, [{:or, {:"/=", @age_field_id, 26}, {:"/=", @age_field_id, 21}}], _}] = ms(query)
     end
 
     test "with `not`" do
-      query = from so in SellOffer, where: not (so.age == 26)
+      query = from(so in SellOffer, where: not (so.age == 26))
       assert [{_, [not: {:==, @age_field_id, 26}], _}] = ms(query)
     end
 
     test "with `or`, `and` and `(..)`" do
-      query = from so in SellOffer, where: (so.age != 26 or so.age != 21) and so.age != 23
-      assert [{_,
-              [{:and, {:or, {:"/=", @age_field_id, 26}, {:"/=", @age_field_id, 21}}, {:"/=", @age_field_id, 23}}],
-              _}] = ms(query)
+      query = from(so in SellOffer, where: (so.age != 26 or so.age != 21) and so.age != 23)
+
+      assert [
+               {_, [{:and, {:or, {:"/=", @age_field_id, 26}, {:"/=", @age_field_id, 21}}, {:"/=", @age_field_id, 23}}],
+                _}
+             ] = ms(query)
     end
 
     test "with `in`" do
-      query = from so in SellOffer, where: so.age in [23, 26]
+      query = from(so in SellOffer, where: so.age in [23, 26])
       assert [{_, [{:or, {:==, @age_field_id, 23}, {:==, @age_field_id, 26}}], _}] = ms(query)
     end
 
@@ -164,20 +252,23 @@ defmodule EctoMnesia.Context.MatchSpecTest do
       loan_product_types = ["PDL"]
 
       query =
-        from so in SellOffer,
-        where: so.status in ^statuses or so.age in [21, 23] or so.loan_product_type in ^loan_product_types
+        from(
+          so in SellOffer,
+          where: so.status in ^statuses or so.age in [21, 23] or so.loan_product_type in ^loan_product_types
+        )
 
-      assert [{_, [{:or,
-        {:or,
-          {:or, {:==, @status_field_id, "ok"}, {:==, @status_field_id, "canceled"}},
-          {:or, {:==, @age_field_id, 21}, {:==, @age_field_id, 23}}
-        },
-        {:or, {:==, :"$19", "PDL"}}
-      }], _}] = ms(query)
+      assert [
+               {_,
+                [
+                  {:or,
+                   {:or, {:or, {:==, @status_field_id, "ok"}, {:==, @status_field_id, "canceled"}},
+                    {:or, {:==, @age_field_id, 21}, {:==, @age_field_id, 23}}}, {:or, {:==, :"$19", "PDL"}}}
+                ], _}
+             ] = ms(query)
     end
 
     test "with `is_nil`" do
-      query = from so in SellOffer, where: is_nil(so.age)
+      query = from(so in SellOffer, where: is_nil(so.age))
       assert [{_, [{:==, @age_field_id, nil}], _}] = ms(query)
     end
   end
@@ -193,7 +284,9 @@ defmodule EctoMnesia.Context.MatchSpecTest do
   describe "having" do
     test "is not supported" do
       assert_raise Ecto.Query.CompileError, "`Ecto.Query.having/3` is not supported by Mnesia adapter.", fn ->
-        ms(from(p in "sell_offer") |> having(status: "foo"))
+        sell_offer = from(p in "sell_offer")
+
+        ms(sell_offer |> having(status: "foo"))
       end
     end
   end

@@ -8,8 +8,9 @@ defmodule Ecto.RepoTest do
     :mnesia.clear_table(:sell_offer)
     :mnesia.clear_table(:id_seq)
 
-    {:ok, loan} = %SellOffer{loan_id: "repo_loan"}
-    |> TestRepo.insert
+    {:ok, loan} =
+      %SellOffer{loan_id: "repo_loan"}
+      |> TestRepo.insert()
 
     %{loan: loan}
   end
@@ -18,7 +19,7 @@ defmodule Ecto.RepoTest do
     schema = %MySchemaNoPK{x: "abc"}
 
     assert_raise Ecto.NoPrimaryKeyFieldError, fn ->
-      TestRepo.update!(schema |> Ecto.Changeset.change, force: true)
+      TestRepo.update!(schema |> Ecto.Changeset.change(), force: true)
     end
 
     assert_raise Ecto.NoPrimaryKeyFieldError, fn ->
@@ -31,19 +32,19 @@ defmodule Ecto.RepoTest do
   # end
 
   test "works with primary key value", %{loan: loan} do
-    assert nil == TestRepo.get(SellOffer, 11111)
+    assert nil == TestRepo.get(SellOffer, 11_111)
     assert %SellOffer{} = TestRepo.get(SellOffer, loan.id)
     assert %SellOffer{} = TestRepo.get_by(SellOffer, loan_id: loan.loan_id)
 
     schema = %SellOffer{id: 1, loan_id: "abc"}
     assert %SellOffer{} = TestRepo.update!(schema |> Ecto.Changeset.change(), force: true)
-    assert %SellOffer{__meta__: %{state: :deleted}} =  TestRepo.delete!(schema)
+    assert %SellOffer{__meta__: %{state: :deleted}} = TestRepo.delete!(schema)
   end
 
   test "works with custom source schema" do
     assert_raise ArgumentError, "Field `:updated_at` does not exist in table `:custom_schema`", fn ->
       schema = %SellOffer{id: 1, loan_id: "abc"} |> put_meta(source: "custom_schema")
-      TestRepo.update!(schema |> Ecto.Changeset.change, force: true)
+      TestRepo.update!(schema |> Ecto.Changeset.change(), force: true)
       TestRepo.delete!(schema)
 
       to_insert = %SellOffer{loan_id: "abc"} |> put_meta(source: "custom_schema")
@@ -55,7 +56,7 @@ defmodule Ecto.RepoTest do
     schema = %SellOffer{loan_id: "abc"}
 
     assert_raise Ecto.NoPrimaryKeyValueError, fn ->
-      TestRepo.update!(schema |> Ecto.Changeset.change, force: true)
+      TestRepo.update!(schema |> Ecto.Changeset.change(), force: true)
     end
 
     assert_raise Ecto.NoPrimaryKeyValueError, fn ->
@@ -75,16 +76,19 @@ defmodule Ecto.RepoTest do
     TestRepo.get(SellOffer, 123)
 
     message = "cannot perform TestRepo.get/2 because the given value is nil"
+
     assert_raise ArgumentError, message, fn ->
       TestRepo.get(SellOffer, nil)
     end
 
     message = ~r"value `:atom` in `where` cannot be cast to type :id in query"
+
     assert_raise Ecto.Query.CastError, message, fn ->
       TestRepo.get(SellOffer, :atom)
     end
 
     message = ~r"expected a from expression with a schema in query"
+
     assert_raise Ecto.QueryError, message, fn ->
       TestRepo.get(%Ecto.Query{}, :atom)
     end
@@ -95,6 +99,7 @@ defmodule Ecto.RepoTest do
     TestRepo.get_by(SellOffer, %{id: 123})
 
     message = ~r"value `:atom` in `where` cannot be cast to type :id in query"
+
     assert_raise Ecto.Query.CastError, message, fn ->
       TestRepo.get_by(SellOffer, id: :atom)
     end
@@ -109,15 +114,15 @@ defmodule Ecto.RepoTest do
 
     # Failures
     assert_raise ArgumentError, ~r/:returning expects at least one field to be given/, fn ->
-      TestRepo.update_all SellOffer, [set: [loan_id: "321"]], returning: []
+      TestRepo.update_all(SellOffer, [set: [loan_id: "321"]], returning: [])
     end
 
     assert_raise Ecto.QueryError, fn ->
-      TestRepo.update_all from(e in SellOffer, select: e), set: [loan_id: "321"]
+      TestRepo.update_all(from(e in SellOffer, select: e), set: [loan_id: "321"])
     end
 
     assert_raise Ecto.QueryError, fn ->
-      TestRepo.update_all from(e in SellOffer, order_by: e.status), set: [loan_id: "321"]
+      TestRepo.update_all(from(e in SellOffer, order_by: e.status), set: [loan_id: "321"])
     end
   end
 
@@ -130,22 +135,23 @@ defmodule Ecto.RepoTest do
 
     # Failures
     assert_raise ArgumentError, ~r/:returning expects at least one field to be given/, fn ->
-      TestRepo.delete_all SellOffer, returning: []
+      TestRepo.delete_all(SellOffer, returning: [])
     end
 
     assert_raise Ecto.QueryError, fn ->
-      TestRepo.delete_all from(e in SellOffer, select: e)
+      TestRepo.delete_all(from(e in SellOffer, select: e))
     end
 
     assert_raise Ecto.QueryError, fn ->
-      TestRepo.delete_all from(e in SellOffer, order_by: e.status)
+      TestRepo.delete_all(from(e in SellOffer, order_by: e.status))
     end
   end
 
   test "transaction returns {:ok, _} tuple" do
-    assert {:ok, %SellOffer{}} = TestRepo.transaction(fn ->
-      %SellOffer{}
-    end)
+    assert {:ok, %SellOffer{}} =
+             TestRepo.transaction(fn ->
+               %SellOffer{}
+             end)
   end
 
   # ## Changesets
@@ -187,21 +193,21 @@ defmodule Ecto.RepoTest do
   end
 
   test "insert!, update!, insert_or_update! and delete! fail on invalid changeset" do
-    invalid = %Ecto.Changeset{valid?: false, data: %SellOffer{}}
+    invalid = %Ecto.Changeset{valid?: false, data: %SellOffer{}, types: %{}}
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform insert because changeset is invalid", fn ->
       TestRepo.insert!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform update because changeset is invalid", fn ->
       TestRepo.update!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform insert because changeset is invalid", fn ->
       TestRepo.insert_or_update!(invalid)
     end
 
-    assert_raise Ecto.InvalidChangesetError, ~r"changeset does not have types information", fn ->
+    assert_raise Ecto.InvalidChangesetError, ~r"could not perform delete because changeset is invalid", fn ->
       TestRepo.delete!(invalid)
     end
   end
@@ -245,18 +251,18 @@ defmodule Ecto.RepoTest do
   test "insert_or_update fails on invalid states" do
     deleted =
       %SellOffer{status: "deleted"}
-      |> TestRepo.insert!
-      |> TestRepo.delete!
+      |> TestRepo.insert!()
+      |> TestRepo.delete!()
       |> Ecto.Changeset.cast(%{status: "updated"}, [:status])
 
     assert_raise ArgumentError, ~r/the changeset has an invalid state/, fn ->
-      TestRepo.insert_or_update deleted
+      TestRepo.insert_or_update(deleted)
     end
   end
 
   test "insert_or_update fails when being passed a struct" do
     assert_raise ArgumentError, ~r/giving a struct to .* is not supported/, fn ->
-      TestRepo.insert_or_update %SellOffer{}
+      TestRepo.insert_or_update(%SellOffer{})
     end
   end
 
@@ -333,7 +339,7 @@ defmodule Ecto.RepoTest do
 
     test "raises on query mismatch" do
       assert_raise ArgumentError, ~r"cannot run on_conflict: query", fn ->
-        query = from p in "posts"
+        query = from(p in "posts")
         TestRepo.insert(%SellOffer{id: 1}, on_conflict: query)
       end
     end

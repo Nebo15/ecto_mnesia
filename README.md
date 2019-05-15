@@ -1,13 +1,14 @@
 # Ecto adapter for Mnesia Erlang term database
 
-[![Deps Status](https://beta.hexfaktor.org/badge/all/github/Nebo15/ecto_mnesia.svg)](https://beta.hexfaktor.org/github/Nebo15/ecto_mnesia) [![Hex.pm Downloads](https://img.shields.io/hexpm/dw/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![Latest Version](https://img.shields.io/hexpm/v/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![License](https://img.shields.io/hexpm/l/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![Build Status](https://travis-ci.org/Nebo15/ecto_mnesia.svg?branch=master)](https://travis-ci.org/Nebo15/ecto_mnesia) [![Coverage Status](https://coveralls.io/repos/github/Nebo15/ecto_mnesia/badge.svg?branch=master)](https://coveralls.io/github/Nebo15/ecto_mnesia?branch=master) [![Ebert](https://ebertapp.io/github/Nebo15/ecto_mnesia.svg)](https://ebertapp.io/github/Nebo15/ecto_mnesia)
+[![Hex.pm Downloads](https://img.shields.io/hexpm/dw/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![Latest Version](https://img.shields.io/hexpm/v/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![License](https://img.shields.io/hexpm/l/ecto_mnesia.svg?maxAge=3600)](https://hex.pm/packages/ecto_mnesia) [![Build Status](https://travis-ci.org/Nebo15/ecto_mnesia.svg?branch=master)](https://travis-ci.org/Nebo15/ecto_mnesia) [![Coverage Status](https://coveralls.io/repos/github/Nebo15/ecto_mnesia/badge.svg?branch=master)](https://coveralls.io/github/Nebo15/ecto_mnesia?branch=master) [![Ebert](https://ebertapp.io/github/Nebo15/ecto_mnesia.svg)](https://ebertapp.io/github/Nebo15/ecto_mnesia)
 
 Ecto 2.X adapter for Mnesia Erlang term database. In most cases it can be used as drop-in replacement for other adapters.
 
 Supported features:
 
 - Compatible `Ecto.Repo` API.
-- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. Also adapter emulates `query.select` and `query.order_bys`, `select .. in [..]` behaviours, even though Mnesia itself does not support them.
+- Automatically converts `Ecto.Query` structs to Erlang `match_spec`. 
+- Emulated `query.select` and `query.order_bys`, `select .. in [..]`. (Emulating is slow for any large dataset, `O(n * log n)`.)
 - Auto-generated (via sequence table) `:id` primary keys.
 - Migrations and database setup via `Ecto.Migrations`.
 - Transactions.
@@ -29,7 +30,7 @@ Not supported features (create issue and vote if you need them):
 - Unique/all other constraints (including associations).
 - JOINs.
 - min, max, avg and other aggregation functions.
-- Intevals.
+- Intervals.
 
 **In general**. This adapter is still not passing all Ecto integration tests and in active development. But it already can be helpful in simple use-cases.
 
@@ -39,11 +40,11 @@ We have a production task that needs low read-latency database and our data fits
 
 Why do we need an adapter? We don't want to lock us to any specific database, since requirements can change. Ecto allows to switch databases by simply modifying the config, and we might want to go back to Postres or another DB.
 
-### Clustering
+### Clustering and using Mnesia for your project
 
-We don't recommend using distributed Mnesia, because it's neither an AP, nor a CP database. (And there is no such thing as an AC DB.) **Mnesia requires you to handle network partitions (split brains) manually.**
+If you use Mnesia - you either get a distributed system from day one or a single node with low availability. Very few people really want any of that options. Specifically Mnesia it's neither an AP, nor a CP database; requires you to handle network partitions (split brains) manually; has much less documentation available compared to a more common databases (like PostgreSQL).
 
-So clustering should be an option only when you are absolutely sure about how to recover from split-brains. In general, if you are not sure what a network split is, don't use distributed Mnesia.
+Please, pick your tools wisely and think through how you would use them in production.
 
 ### Mnesia configuration from `config.exs`
 
@@ -133,6 +134,6 @@ The docs can be found at [https://hexdocs.pm/ecto_mnesia](https://hexdocs.pm/ect
 
 ## Thanks
 
-We want to thank [meh](https://github.com/meh) for his [Amnesia](https://github.com/meh/amnesia) package that helped a loot in initial Mnesia investigations. Some pieces of code was copied from his repo.
+We want to thank [meh](https://github.com/meh) for his [Amnesia](https://github.com/meh/amnesia) package that helped a lot in initial Mnesia investigations. Some pieces of code was copied from his repo.
 
 Also big thanks to [josevalim](https://github.com/josevalim) for Elixir, Ecto and active help while this adapter was developed.
