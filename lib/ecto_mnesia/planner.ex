@@ -229,9 +229,6 @@ defmodule EctoMnesia.Planner do
     |> return(returning)
   end
 
-  defp return({:ok, params}, _returning = []), do: {:ok, []}
-  defp return(return, _returning), do: return
-
   @doc """
   Insert all
   """
@@ -242,7 +239,7 @@ defmodule EctoMnesia.Planner do
         _header,
         rows,
         _on_conflict,
-        _returning,
+        returning,
         _opts
       ) do
     table = Table.get_name(table)
@@ -252,12 +249,15 @@ defmodule EctoMnesia.Planner do
         Enum.reduce(rows, {0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
       end)
 
-    case result do
-      {:error, _reason} ->
+    case {result, returning} do
+      {{:error, _reason}, _returning} ->
         {0, nil}
 
-      {count, _records} ->
+      {{count, _records}, []} ->
         {count, nil}
+
+      {{count, records}, _returning} ->
+        {count, records}
     end
   end
 
@@ -401,4 +401,9 @@ defmodule EctoMnesia.Planner do
   def dumpers({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.dump_embed(primitive, &1)]
   def dumpers(:binary_id, type), do: [type, Ecto.UUID]
   def dumpers(_primitive, type), do: [type]
+
+  defp return({:ok, _fields}, _returning = []), do: {:ok, []}
+  defp return({:ok, fields}, returning) do
+    {:ok, Keyword.take(fields, returning)}
+  end
 end
