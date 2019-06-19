@@ -222,11 +222,15 @@ defmodule EctoMnesia.Planner do
         %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
         sources,
         _on_conflict,
-        _returning,
+        returning,
         _opts
       ) do
     do_insert(table, schema, autogenerate_id, sources)
+    |> return(returning)
   end
+
+  defp return({:ok, params}, _returning = []), do: {:ok, []}
+  defp return(return, _returning), do: return
 
   @doc """
   Insert all
