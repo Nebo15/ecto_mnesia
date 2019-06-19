@@ -9,14 +9,14 @@ defmodule EctoMnesia.Table do
   """
   def insert(table, record, _opts \\ []) when is_tuple(record) do
     table = get_name(table)
-    #transaction(fn ->
+    transaction(fn ->
       key = elem(record, 1)
 
       case _get(table, key) do
         nil -> _insert(table, record)
         _ -> {:error, :already_exists}
       end
-    #end)
+    end)
   end
 
   defp _insert(table, record) do
@@ -52,7 +52,7 @@ defmodule EctoMnesia.Table do
   """
   def update(table, key, changes, _opts \\ []) when is_list(changes) do
     table = get_name(table)
-    #transaction(fn ->
+    transaction(fn ->
       case _get(table, key, :write) do
         nil ->
           {:error, :not_found}
@@ -60,7 +60,7 @@ defmodule EctoMnesia.Table do
         stored_record ->
           _insert(table, update_record(stored_record, changes))
       end
-    #end)
+    end)
   end
 
   defp update_record(record, changes) do
