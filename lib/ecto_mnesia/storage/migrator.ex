@@ -170,7 +170,12 @@ defmodule EctoMnesia.Storage.Migrator do
   # Helpers
   defp do_create_table(repo, table, type, attributes) do
     config = conf(repo)
-    if length(attributes) == 1, do: raise("Tables must have at least 2 or more fields")
+    attributes =
+      if length(attributes) == 1 do
+        attributes ++ [:__hidden]
+      else
+        attributes
+      end
     tab_def = [{:attributes, attributes}, {config[:storage_type], [config[:host]]}, {:type, get_engine(type)}]
     table = if String.valid?(table), do: String.to_atom(table), else: table
 
