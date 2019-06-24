@@ -59,6 +59,7 @@ defmodule EctoMnesia.Planner do
         preprocess,
         _opts
       ) do
+    fields = context.query.select
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
 
@@ -66,9 +67,6 @@ defmodule EctoMnesia.Planner do
       "Selecting all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
     end)
 
-    # still dont know where to get fields from
-    # as they are not coming on the parameters of this function
-    fields = []
     mapper = processor(preprocess, fields, sources)
 
     result =
@@ -92,12 +90,10 @@ defmodule EctoMnesia.Planner do
         preprocess,
         opts
       ) do
+    fields = context.query.select
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
 
-    # still dont know where to get fields from
-    # as they are not coming on the parameters of this function
-    fields = []
     mapper = processor(preprocess, fields, sources)
 
     Logger.debug(fn ->
@@ -128,12 +124,10 @@ defmodule EctoMnesia.Planner do
         preprocess,
         opts
       ) do
+    fields = context.query.select
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
 
-    # still dont know where to get fields from
-    # as they are not coming on the parameters of this function
-    fields = []
     mapper = processor(preprocess, fields, sources)
 
     Logger.debug(fn ->
