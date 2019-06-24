@@ -219,8 +219,20 @@ defmodule EctoMnesia.Planner do
         returning,
         _opts
       ) do
-    do_insert(table, schema, autogenerate_id, sources)
-    |> return(returning)
+    case do_insert(table, schema, autogenerate_id, sources) do
+      {:ok, fields} when length(returning) == 0 ->
+        {:ok, []}
+
+      {:ok, fields} ->
+        {:ok, Keyword.take(fields, returning)}
+
+      {:invalid, [{type, field} | _]} ->
+        raise Ecto.ConstraintError,
+          type: type,
+          constraint: "#{type}.#{field}",
+          changeset: Ecto.Changeset.change(%{__struct__: schema}),
+          action: :insert
+    end
   end
 
   @doc """
@@ -395,9 +407,4 @@ defmodule EctoMnesia.Planner do
   def dumpers({:embed, _value} = primitive, _type), do: [&Ecto.Adapters.SQL.dump_embed(primitive, &1)]
   def dumpers(:binary_id, type), do: [type, Ecto.UUID]
   def dumpers(_primitive, type), do: [type]
-
-  defp return({:ok, _fields}, _returning = []), do: {:ok, []}
-  defp return({:ok, fields}, returning) do
-    {:ok, Keyword.take(fields, returning)}
-  end
 end
