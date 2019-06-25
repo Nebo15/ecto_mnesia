@@ -9,6 +9,7 @@ defmodule EctoMnesia.Table do
   """
   def insert(table, record, _opts \\ []) when is_tuple(record) do
     table = get_name(table)
+
     transaction(fn ->
       key = elem(record, 1)
 
@@ -52,6 +53,7 @@ defmodule EctoMnesia.Table do
   """
   def update(table, key, changes, _opts \\ []) when is_list(changes) do
     table = get_name(table)
+
     transaction(fn ->
       case _get(table, key, :write) do
         nil ->

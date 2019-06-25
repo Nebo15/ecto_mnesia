@@ -220,7 +220,7 @@ defmodule EctoMnesia.Planner do
         _opts
       ) do
     case do_insert(table, schema, autogenerate_id, sources) do
-      {:ok, fields} when length(returning) == 0 ->
+      {:ok, _fields} when returning == [] ->
         {:ok, []}
 
       {:ok, fields} ->
