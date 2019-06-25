@@ -48,6 +48,7 @@ defmodule EctoMnesia.Storage.Migrator do
 
   def execute(repo, {:alter, %Ecto.Migration.Table{name: table}, instructions}, _opts) do
     ensure_pk_table!(repo)
+    table = if String.valid?(table), do: String.to_atom(table), else: table
 
     table_attrs =
       try do
@@ -75,6 +76,7 @@ defmodule EctoMnesia.Storage.Migrator do
 
   def execute(repo, {:rename, %Ecto.Migration.Table{name: table}, old_field, new_field}, _opts) do
     ensure_pk_table!(repo)
+    table = if String.valid?(table), do: String.to_atom(table), else: table
 
     table_attrs =
       try do
@@ -103,6 +105,8 @@ defmodule EctoMnesia.Storage.Migrator do
   end
 
   def execute(_repo, {:drop, %Ecto.Migration.Table{name: table}}, _opts) do
+    table = if String.valid?(table), do: String.to_atom(table), else: table
+
     case Mnesia.delete_table(table) do
       {:atomic, :ok} -> :ok
       {:aborted, {:no_exists, _}} -> raise "Table #{table} does not exists"
@@ -110,6 +114,8 @@ defmodule EctoMnesia.Storage.Migrator do
   end
 
   def execute(_repo, {:drop_if_exists, %Ecto.Migration.Table{name: table}}, _opts) do
+    table = if String.valid?(table), do: String.to_atom(table), else: table
+
     case Mnesia.delete_table(table) do
       {:atomic, :ok} -> :ok
       {:aborted, {:no_exists, _}} -> :ok
@@ -132,6 +138,8 @@ defmodule EctoMnesia.Storage.Migrator do
   end
 
   def execute(_repo, {:create_if_not_exists, %Ecto.Migration.Index{table: table, columns: columns}}, _opts) do
+    table = if String.valid?(table), do: String.to_atom(table), else: table
+
     columns
     |> Enum.uniq()
     |> Enum.map(fn index ->
@@ -144,6 +152,8 @@ defmodule EctoMnesia.Storage.Migrator do
   end
 
   def execute(_repo, {:drop, %Ecto.Migration.Index{table: table, columns: columns}}, _opts) do
+    table = if String.valid?(table), do: String.to_atom(table), else: table
+
     columns
     |> Enum.uniq()
     |> Enum.map(fn index ->
@@ -156,6 +166,8 @@ defmodule EctoMnesia.Storage.Migrator do
   end
 
   def execute(_repo, {:drop_if_exists, %Ecto.Migration.Index{table: table, columns: columns}}, _opts) do
+    table = if String.valid?(table), do: String.to_atom(table), else: table
+
     columns
     |> Enum.uniq()
     |> Enum.map(fn index ->
