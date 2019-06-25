@@ -369,17 +369,21 @@ defmodule EctoMnesia.Planner do
   def update(
         _repo,
         %{schema: schema, source: {_, table}, autogenerate_id: _autogenerate_id},
-        params,
+        changes,
         filter,
-        _autogen,
+        returning,
         _opts
       ) do
     pk = get_pk!(filter, schema.__schema__(:primary_key))
     context = Context.new(table, schema)
-    update = Update.from_keyword(schema, table, params, context)
+    update = Update.from_keyword(schema, table, changes, context)
 
     case Table.update(table, pk, update) do
-      {:ok, _record} -> {:ok, params}
+      {:ok, _record} when returning == [] ->
+        {:ok, []}
+
+      {:ok, _record} ->
+        {:ok, changes}
       error -> error
     end
   end
