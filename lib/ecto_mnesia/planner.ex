@@ -35,7 +35,7 @@ defmodule EctoMnesia.Planner do
   """
   def autogenerate(:id), do: nil
   def autogenerate(:embed_id), do: Ecto.UUID.generate()
-  def autogenerate(:binary_id), do: Ecto.UUID.autogenerate()
+  def autogenerate(:binary_id), do: Ecto.UUID.autogenerate() |> Ecto.UUID.dump |> elem(1)
 
   @doc """
   Prepares are called by Ecto before `execute/6` methods.
