@@ -29,8 +29,9 @@ defmodule EctoMnesia.Record.Context.MatchSpec do
 
   # Build match_spec head part (data placeholders)
   defp match_head(%Context{table: %Context.Table{name: table_name}} = context) do
-    [ table_name
-    | Context.get_fields_placeholders(context)
+    [
+      table_name
+      | Context.get_fields_placeholders(context)
     ]
     |> List.to_tuple()
   end

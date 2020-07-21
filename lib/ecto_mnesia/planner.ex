@@ -53,12 +53,13 @@ defmodule EctoMnesia.Planner do
   """
   def execute(
         _repo,
-        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        %{sources: {{table, _schema}}},
         {:nocache, {:all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
         sources,
         preprocess,
         _opts
       ) do
+    fields = context.query.select
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
 
@@ -66,10 +67,12 @@ defmodule EctoMnesia.Planner do
       "Selecting all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
     end)
 
+    mapper = processor(preprocess, fields, sources)
+
     result =
       table
       |> Table.select(match_spec)
-      |> Enum.map(&process_row(&1, preprocess, fields))
+      |> Enum.map(mapper)
       |> ordering_fn.()
       |> limit_fn.()
 
@@ -81,15 +84,17 @@ defmodule EctoMnesia.Planner do
   """
   def execute(
         _repo,
-        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        %{sources: {{table, _schema}}},
         {:nocache, {:delete_all, %Ecto.Query{} = query, {limit, limit_fn}, context, ordering_fn}},
         sources,
         preprocess,
         opts
       ) do
+    fields = context.query.select
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
-    preprocess_fn = &process_row(&1, preprocess, fields)
+
+    mapper = processor(preprocess, fields, sources)
 
     Logger.debug(fn ->
       "Deleting all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
@@ -104,7 +109,7 @@ defmodule EctoMnesia.Planner do
         {:ok, _} = Table.delete(table, List.first(record))
         record
       end)
-      |> return_all(ordering_fn, preprocess_fn, {limit, limit_fn}, opts)
+      |> return_all(ordering_fn, mapper, {limit, limit_fn}, opts)
     end)
   end
 
@@ -113,15 +118,17 @@ defmodule EctoMnesia.Planner do
   """
   def execute(
         _repo,
-        %{sources: {{table, _schema}}, fields: fields, take: _take},
+        %{sources: {{table, _schema}}},
         {:nocache, {:update_all, %Ecto.Query{updates: updates} = query, {limit, limit_fn}, context, ordering_fn}},
         sources,
         preprocess,
         opts
       ) do
+    fields = context.query.select
     context = Context.assign_query(context, query, sources)
     match_spec = Context.get_match_spec(context)
-    preprocess_fn = &process_row(&1, preprocess, fields)
+
+    mapper = processor(preprocess, fields, sources)
 
     Logger.debug(fn ->
       "Updating all records by match specification `#{inspect(match_spec)}` with limit #{inspect(limit)}"
@@ -137,7 +144,7 @@ defmodule EctoMnesia.Planner do
         {:ok, result} = Table.update(table, record_id, update)
         result
       end)
-      |> return_all(ordering_fn, preprocess_fn, {limit, limit_fn}, opts)
+      |> return_all(ordering_fn, mapper, {limit, limit_fn}, opts)
     end)
   end
 
@@ -163,7 +170,19 @@ defmodule EctoMnesia.Planner do
     end
   end
 
-  defp process_row(row, process, fields) do
+  defp processor(process, fields, sources) when is_function(process, 3) do
+    &process_row(&1, process, fields, sources)
+  end
+
+  defp processor(process, _fields, _source) when is_function(process, 1) do
+    process
+  end
+
+  defp processor(nil, _fields, _source) do
+    nil
+  end
+
+  defp process_row(row, process, fields, _sources) do
     fields
     |> Enum.map_reduce(row, fn
       {:&, _, [_, _, counter]} = field, acc ->
@@ -197,10 +216,23 @@ defmodule EctoMnesia.Planner do
         %{autogenerate_id: autogenerate_id, schema: schema, source: {_, table}},
         sources,
         _on_conflict,
-        _returning,
+        returning,
         _opts
       ) do
-    do_insert(table, schema, autogenerate_id, sources)
+    case do_insert(table, schema, autogenerate_id, sources) do
+      {:ok, _fields} when returning == [] ->
+        {:ok, []}
+
+      {:ok, fields} ->
+        {:ok, Keyword.take(fields, returning)}
+
+      {:invalid, [{type, field} | _]} ->
+        raise Ecto.ConstraintError,
+          type: type,
+          constraint: "#{type}.#{field}",
+          changeset: Ecto.Changeset.change(%{__struct__: schema}),
+          action: :insert
+    end
   end
 
   @doc """
@@ -213,7 +245,7 @@ defmodule EctoMnesia.Planner do
         _header,
         rows,
         _on_conflict,
-        _returning,
+        returning,
         _opts
       ) do
     table = Table.get_name(table)
@@ -223,12 +255,15 @@ defmodule EctoMnesia.Planner do
         Enum.reduce(rows, {0, []}, &insert_record(&1, &2, repo, table, schema, autogenerate_id))
       end)
 
-    case result do
-      {:error, _reason} ->
+    case {result, returning} do
+      {{:error, _reason}, _returning} ->
         {0, nil}
 
-      {count, _records} ->
+      {{count, _records}, []} ->
         {count, nil}
+
+      {{count, records}, _returning} ->
+        {count, records}
     end
   end
 
@@ -249,12 +284,16 @@ defmodule EctoMnesia.Planner do
   defp do_insert(table, schema, nil, params) do
     record = Record.new(schema, table, params)
 
-    case Table.insert(table, record) do
-      {:ok, ^record} ->
-        {:ok, params}
-
-      {:error, reason} ->
-        {:error, reason}
+    case Mnesia.transaction(fn ->
+      case Table.insert(table, record) do
+        {:ok, ^record} ->
+          {:ok, params}
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end) do
+      {:atomic, res} -> res
+      {:abort, reason} -> {:error, reason}
     end
   end
 
@@ -263,15 +302,18 @@ defmodule EctoMnesia.Planner do
     params = put_new_pk(params, pk_field, table)
     record = Record.new(schema, table, params)
 
-    case Table.insert(table, record) do
-      {:ok, ^record} ->
-        {:ok, params}
-
-      {:error, :already_exists} ->
-        {:invalid, [{:unique, pk_field}]}
-
-      {:error, reason} ->
-        {:error, reason}
+    case Mnesia.transaction(fn ->
+      case Table.insert(table, record) do
+        {:ok, ^record} ->
+          {:ok, params}
+        {:error, :already_exists} ->
+          {:invalid, [{:unique, pk_field}]}
+        {:error, reason} ->
+          {:error, reason}
+      end
+    end) do
+      {:atomic, res} -> res
+      {:abort, reason} -> {:error, reason}
     end
   end
 
@@ -327,17 +369,21 @@ defmodule EctoMnesia.Planner do
   def update(
         _repo,
         %{schema: schema, source: {_, table}, autogenerate_id: _autogenerate_id},
-        params,
+        changes,
         filter,
-        _autogen,
+        returning,
         _opts
       ) do
     pk = get_pk!(filter, schema.__schema__(:primary_key))
     context = Context.new(table, schema)
-    update = Update.from_keyword(schema, table, params, context)
+    update = Update.from_keyword(schema, table, changes, context)
 
     case Table.update(table, pk, update) do
-      {:ok, _record} -> {:ok, params}
+      {:ok, _record} when returning == [] ->
+        {:ok, []}
+
+      {:ok, _record} ->
+        {:ok, changes}
       error -> error
     end
   end

@@ -12,8 +12,8 @@ defmodule SellOffer do
     field(:dividable, :boolean)
     field(:guaranteed, :boolean)
     field(:status, :string)
-    field(:booked_at, Ecto.DateTime)
-    field(:ended_at, Ecto.DateTime)
+    field(:booked_at, :naive_datetime)
+    field(:ended_at, :naive_datetime)
     field(:age, :integer)
     field(:income, :decimal)
     field(:dpc, :integer)
@@ -90,6 +90,5 @@ defmodule TestRepoMigrations do
 end
 
 defmodule TestRepo do
-  use Ecto.Repo,
-    otp_app: :ecto_mnesia
+  use Ecto.Repo, otp_app: :ecto_mnesia
 end
