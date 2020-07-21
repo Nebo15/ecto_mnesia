@@ -48,12 +48,14 @@ Please, pick your tools wisely and think through how you would use them in produ
 
 ### Mnesia configuration from `config.exs`
 
-    config :ecto_mnesia,
-      host: {:system, :atom, "MNESIA_HOST", Kernel.node()},
-      storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
+```elixir
+config :ecto_mnesia,
+  host: {:system, :atom, "MNESIA_HOST", Kernel.node()},
+  storage_type: {:system, :atom, "MNESIA_STORAGE_TYPE", :disc_copies}
 
-    config :mnesia,
-      dir: 'priv/data/mnesia' # Make sure this directory exists
+config :mnesia,
+  dir: 'priv/data/mnesia' # Make sure this directory exists
+```
 
 Notice that `{:system, [TYPE], ENV_NAME, default_value}` tuples can be replaced with any raw values.
 
@@ -111,24 +113,32 @@ It is [available in Hex](https://hexdocs.pm/ecto_mnesia), the package can be ins
 
   1. Add `ecto_mnesia` to your list of dependencies in `mix.exs`:
 
-    def deps do
-      [{:ecto_mnesia, "~> 0.9.0"}]
-    end
+```elixir
+def deps do
+  [{:ecto_mnesia, "~> 0.9.0"}]
+end
+```
 
   2. Ensure `ecto_mnesia` is started before your application:
 
-    def application do
-      [applications: [:ecto_mnesia]]
-    end
+```elixir
+def application do
+  [applications: [:ecto_mnesia]]
+end
+```
 
   3. Use `EctoMnesia.Adapter` as your `Ecto.Repo` adapter:
 
-    config :my_app, MyRepo,
-      adapter: EctoMnesia.Adapter
+```elixir
+config :my_app, MyRepo,
+  adapter: EctoMnesia.Adapter
+```
 
   4. Optionally set custom Mnesia data dir (don't forget to create it):
 
-    config :mnesia, :dir, 'priv/data/mnesia'
+```elixir
+config :mnesia, :dir, 'priv/data/mnesia'
+```
 
 The docs can be found at [https://hexdocs.pm/ecto_mnesia](https://hexdocs.pm/ecto_mnesia).
 
